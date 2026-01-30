@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pink Starfield</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            color: #ff69b4;
+            backdrop-filter: blur(10px);
+            border-top: 2px solid #ff69b4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 150px;
+        }
+
+        .control-group label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 5px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            background: #ff69b4;
+        }
+
+        .control-group input[type="range"]::-moz-range-thumb {
+            background: #ff69b4;
+        }
+
+        .value-display {
+            font-size: 12px;
+            color: #ffb3d9;
+            margin-left: 10px;
+        }
+
+        .switch-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .switch-group label:first-child {
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #555;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #ff69b4;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        h2 {
+            font-size: 16px;
+            color: #ffb3d9;
+            margin-right: 20px;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="starfield"></canvas>
+
+    <div class="controls">
+        <h2>Starfield Controls</h2>
+
+        <div class="control-group">
+            <label>
+                Star Count
+                <span class="value-display" id="countValue">200</span>
+            </label>
+            <input type="range" id="starCount" min="50" max="500" value="200" step="10">
+        </div>
+
+        <div class="control-group">
+            <label>
+                Star Speed
+                <span class="value-display" id="speedValue">2</span>
+            </label>
+            <input type="range" id="starSpeed" min="0.5" max="10" value="2" step="0.5">
+        </div>
+
+        <div class="control-group">
+            <label>
+                Trail Length
+                <span class="value-display" id="trailValue">0.1</span>
+            </label>
+            <input type="range" id="trailLength" min="0.01" max="0.5" value="0.1" step="0.01">
+        </div>
+
+        <div class="switch-group">
+            <label>Kaleidoscope</label>
+            <label class="switch">
+                <input type="checkbox" id="kaleidoscope">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="switch-group">
+            <label>Rotation</label>
+            <label class="switch">
+                <input type="checkbox" id="rotation">
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('starfield');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initStars();
+        });
+
+        // Pink color palette
+        const pinkShades = [
+            '#FF1493', // Deep Pink
+            '#FF69B4', // Hot Pink
+            '#FFB6C1', // Light Pink
+            '#FFC0CB', // Pink
+            '#FF91A4', // Pastel Pink
+            '#FF6EC7', // Violet Pink
+            '#FF85B3', // Rose Pink
+            '#FFB3D9', // Baby Pink
+        ];
+
+        let stars = [];
+        let settings = {
+            count: 200,
+            speed: 2,
+            trailLength: 0.1,
+            kaleidoscope: false,
+            rotation: false,
+            rotationAngle: 0
+        };
+
+        class Star {
+            constructor() {
+                this.reset();
+                this.z = Math.random() * canvas.width;
+            }
+
+            reset() {
+                this.x = Math.random() * canvas.width - canvas.width / 2;
+                this.y = Math.random() * canvas.height - canvas.height / 2;
+                this.z = canvas.width;
+                this.pz = this.z;
+                this.color = pinkShades[Math.floor(Math.random() * pinkShades.length)];
+                this.colorIndex = 0;
+            }
+
+            update() {
+                this.pz = this.z;
+                this.z -= settings.speed;
+
+                if (this.z < 1) {
+                    this.reset();
+                }
+
+                if (settings.kaleidoscope) {
+                    this.colorIndex = (this.colorIndex + 0.02) % pinkShades.length;
+                    this.color = pinkShades[Math.floor(this.colorIndex)];
+                }
+            }
+
+            show() {
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+
+                let x = this.x;
+                let y = this.y;
+
+                if (settings.rotation) {
+                    const dist = Math.sqrt(x * x + y * y);
+                    const angle = Math.atan2(y, x) + settings.rotationAngle;
+                    x = dist * Math.cos(angle);
+                    y = dist * Math.sin(angle);
+                }
+
+                const sx = (x / this.z) * canvas.width + centerX;
+                const sy = (y / this.z) * canvas.height + centerY;
+
+                const px = (x / this.pz) * canvas.width + centerX;
+                const py = (y / this.pz) * canvas.height + centerY;
+
+                const r = (1 - this.z / canvas.width) * 15;
+
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = r / 3;
+                ctx.beginPath();
+                ctx.moveTo(px, py);
+                ctx.lineTo(sx, sy);
+                ctx.stroke();
+
+                // Draw 5-point star
+                this.drawStar(sx, sy, r);
+            }
+
+            drawStar(x, y, radius) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.fillStyle = this.color;
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 2;
+
+                ctx.beginPath();
+                for (let i = 0; i < 5; i++) {
+                    const angle = (i * 4 * Math.PI) / 5 - Math.PI / 2;
+                    const xPos = Math.cos(angle) * radius;
+                    const yPos = Math.sin(angle) * radius;
+
+                    if (i === 0) {
+                        ctx.moveTo(xPos, yPos);
+                    } else {
+                        ctx.lineTo(xPos, yPos);
+                    }
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Add glow effect
+                ctx.shadowBlur = radius * 2;
+                ctx.shadowColor = this.color;
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        function initStars() {
+            stars = [];
+            for (let i = 0; i < settings.count; i++) {
+                stars.push(new Star());
+            }
+        }
+
+        function animate() {
+            ctx.fillStyle = `rgba(0, 0, 0, ${settings.trailLength})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (settings.rotation) {
+                settings.rotationAngle += 0.005;
+            }
+
+            stars.forEach(star => {
+                star.update();
+                star.show();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        // Control handlers
+        document.getElementById('starCount').addEventListener('input', (e) => {
+            settings.count = parseInt(e.target.value);
+            document.getElementById('countValue').textContent = settings.count;
+            initStars();
+        });
+
+        document.getElementById('starSpeed').addEventListener('input', (e) => {
+            settings.speed = parseFloat(e.target.value);
+            document.getElementById('speedValue').textContent = settings.speed;
+        });
+
+        document.getElementById('trailLength').addEventListener('input', (e) => {
+            settings.trailLength = parseFloat(e.target.value);
+            document.getElementById('trailValue').textContent = settings.trailLength;
+        });
+
+        document.getElementById('kaleidoscope').addEventListener('change', (e) => {
+            settings.kaleidoscope = e.target.checked;
+        });
+
+        document.getElementById('rotation').addEventListener('change', (e) => {
+            settings.rotation = e.target.checked;
+            if (!e.target.checked) {
+                settings.rotationAngle = 0;
+            }
+        });
+
+        // Initialize and start
+        initStars();
+        animate();
+    </script>
+</body>
+</html>
