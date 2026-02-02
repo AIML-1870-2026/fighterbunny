@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>fighterbunny - Portfolio</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #ffe4ec 0%, #fff0f5 50%, #e8f5e9 100%);
+            min-height: 100vh;
+            font-family: 'Comic Sans MS', 'Chalkboard', cursive;
+            overflow-x: hidden;
+        }
+
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 2s infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .bunny-icon {
+            font-size: 80px;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        h1 {
+            font-size: 3em;
+            background: linear-gradient(135deg, #ff69b4, #ff9ecd, #98fb98);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 20px 0 10px;
+            text-shadow: none;
+        }
+
+        .tagline {
+            color: #ff69b4;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            padding: 20px 0;
+        }
+
+        .project-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 25px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(255, 105, 180, 0.2);
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: block;
+        }
+
+        .project-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: #ff69b4;
+            box-shadow: 0 15px 50px rgba(255, 105, 180, 0.3);
+        }
+
+        .project-icon {
+            font-size: 50px;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .project-card h2 {
+            color: #ff69b4;
+            font-size: 1.4em;
+            margin-bottom: 10px;
+        }
+
+        .project-card p {
+            color: #666;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+
+        .project-card.snake { border-top: 4px solid #ff69b4; }
+        .project-card.stellar { border-top: 4px solid #9b59b6; }
+        .project-card.starfield { border-top: 4px solid #3498db; }
+        .project-card.hello-world { border-top: 4px solid #2ecc71; }
+        .project-card.hello-me { border-top: 4px solid #f39c12; }
+
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            color: #ff69b4;
+        }
+
+        footer a {
+            color: #3cb371;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        .sparkle {
+            position: fixed;
+            pointer-events: none;
+            z-index: 1000;
+            font-size: 20px;
+            animation: sparkle-fade 1s forwards;
+        }
+
+        @keyframes sparkle-fade {
+            0% { opacity: 1; transform: scale(0) rotate(0deg); }
+            50% { opacity: 1; transform: scale(1) rotate(180deg); }
+            100% { opacity: 0; transform: scale(0.5) rotate(360deg); }
+        }
+
+        .hearts-float {
+            position: fixed;
+            bottom: -50px;
+            font-size: 24px;
+            animation: float-up 8s linear infinite;
+            opacity: 0.6;
+            z-index: 0;
+        }
+
+        @keyframes float-up {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0.6;
+            }
+            100% {
+                transform: translateY(-110vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+
+    <div class="container">
+        <header>
+            <div class="bunny-icon">🐰</div>
+            <h1>fighterbunny</h1>
+            <p class="tagline">Welcome to my creative corner!</p>
+        </header>
+
+        <div class="projects-grid">
+            <a href="snake/" class="project-card snake">
+                <span class="project-icon">🐍</span>
+                <h2>Cute Snake Game</h2>
+                <p>A pastel-themed snake game with strawberries, raspberries, cherries, and happy bouncy music!</p>
+            </a>
+
+            <a href="stellar-web/" class="project-card stellar">
+                <span class="project-icon">💜</span>
+                <h2>Stellar Web</h2>
+                <p>Interactive particle system with heart-shaped nodes and magical fireworks effects.</p>
+            </a>
+
+            <a href="starfield/" class="project-card starfield">
+                <span class="project-icon">✨</span>
+                <h2>Starfield</h2>
+                <p>A beautiful interactive pink starfield with sparkling particle system.</p>
+            </a>
+
+            <a href="hello-world/" class="project-card hello-world">
+                <span class="project-icon">🌍</span>
+                <h2>Hello World</h2>
+                <p>My classic first webpage - where every coder's journey begins!</p>
+            </a>
+
+            <a href="hello-from-me/" class="project-card hello-me">
+                <span class="project-icon">👋</span>
+                <h2>Hello From Me</h2>
+                <p>A personal introduction page with sparkles and style.</p>
+            </a>
+        </div>
+
+        <footer>
+            <p>Made with 💖 by fighterbunny</p>
+        </footer>
+    </div>
+
+    <script>
+        // Create twinkling stars
+        function createStars() {
+            const container = document.getElementById('stars');
+            const starCount = 50;
+
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.width = (Math.random() * 4 + 2) + 'px';
+                star.style.height = star.style.width;
+                star.style.animationDelay = Math.random() * 2 + 's';
+                star.style.animationDuration = (Math.random() * 2 + 1) + 's';
+                container.appendChild(star);
+            }
+        }
+
+        // Create floating hearts
+        function createFloatingHearts() {
+            const hearts = ['💖', '💕', '💗', '🌸', '✨'];
+
+            setInterval(() => {
+                const heart = document.createElement('div');
+                heart.className = 'hearts-float';
+                heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+                heart.style.left = Math.random() * 100 + '%';
+                heart.style.animationDuration = (Math.random() * 4 + 6) + 's';
+                document.body.appendChild(heart);
+
+                setTimeout(() => heart.remove(), 10000);
+            }, 800);
+        }
+
+        // Sparkle effect on mouse move
+        function createSparkle(x, y) {
+            const sparkles = ['✨', '⭐', '💫', '🌟'];
+            const sparkle = document.createElement('div');
+            sparkle.className = 'sparkle';
+            sparkle.textContent = sparkles[Math.floor(Math.random() * sparkles.length)];
+            sparkle.style.left = x + 'px';
+            sparkle.style.top = y + 'px';
+            document.body.appendChild(sparkle);
+
+            setTimeout(() => sparkle.remove(), 1000);
+        }
+
+        let sparkleThrottle = 0;
+        document.addEventListener('mousemove', (e) => {
+            if (Date.now() - sparkleThrottle > 100) {
+                if (Math.random() > 0.7) {
+                    createSparkle(e.clientX, e.clientY);
+                }
+                sparkleThrottle = Date.now();
+            }
+        });
+
+        createStars();
+        createFloatingHearts();
+    </script>
+</body>
+</html>
