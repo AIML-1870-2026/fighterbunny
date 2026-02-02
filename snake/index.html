@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cute Snake Game - fighterbunny</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #e8f5e9 0%, #f0fff0 50%, #e8f5e9 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: 'Comic Sans MS', 'Chalkboard', cursive;
+            padding: 15px;
+        }
+
+        h1 {
+            color: #ff69b4;
+            text-shadow: 2px 2px 4px rgba(255, 105, 180, 0.3);
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .game-container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .game-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .top-bar {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .controls-info {
+            background: rgba(144, 238, 144, 0.3);
+            border-radius: 15px;
+            padding: 8px 12px;
+            text-align: center;
+            color: #2e8b57;
+        }
+
+        .controls-info h3 {
+            margin-bottom: 3px;
+            color: #3cb371;
+            font-size: 12px;
+        }
+
+        .controls-info p {
+            font-size: 11px;
+            margin: 2px 0;
+        }
+
+        .score-display {
+            font-size: 1.2em;
+            color: #ff69b4;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 8px 16px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(144, 238, 144, 0.3);
+            border: 2px solid #98fb98;
+        }
+
+        .timer-display {
+            font-size: 1.2em;
+            color: #3cb371;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 8px 16px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(144, 238, 144, 0.3);
+            border: 2px solid #98fb98;
+            display: none;
+        }
+
+        .timer-display.show {
+            display: block;
+        }
+
+        .timer-display.warning {
+            color: #ff6b6b;
+            border-color: #ff6b6b;
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .dropdown-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .dropdown-group label {
+            font-size: 11px;
+            color: #2e8b57;
+            font-weight: bold;
+        }
+
+        .dropdown {
+            background: #98fb98;
+            border: 2px solid #3cb371;
+            padding: 6px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+            color: #2e8b57;
+            outline: none;
+            min-width: 100px;
+        }
+
+        .dropdown:focus {
+            border-color: #ff69b4;
+        }
+
+        .music-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 8px 12px;
+            border-radius: 15px;
+            border: 2px solid #98fb98;
+        }
+
+        .music-toggle label {
+            font-size: 12px;
+            color: #2e8b57;
+        }
+
+        .music-switch {
+            position: relative;
+            width: 40px;
+            height: 22px;
+        }
+
+        .music-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .music-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .3s;
+            border-radius: 22px;
+        }
+
+        .music-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .music-slider {
+            background-color: #ff69b4;
+        }
+
+        input:checked + .music-slider:before {
+            transform: translateX(18px);
+        }
+
+        canvas {
+            border: 4px solid #98fb98;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(144, 238, 144, 0.3);
+            background: #fffef5;
+            transition: transform 0.1s;
+        }
+
+        canvas.shake {
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        .leaderboard {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            padding: 15px;
+            min-width: 200px;
+            box-shadow: 0 8px 30px rgba(144, 238, 144, 0.2);
+            border: 3px solid #98fb98;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .leaderboard h2 {
+            color: #3cb371;
+            text-align: center;
+            margin-bottom: 12px;
+            font-size: 1.3em;
+        }
+
+        .leaderboard-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 10px;
+            margin: 4px 0;
+            background: linear-gradient(90deg, #f0fff0, #e8f5e9);
+            border-radius: 10px;
+            color: #2e8b57;
+            font-size: 13px;
+        }
+
+        .leaderboard-entry:first-of-type {
+            background: linear-gradient(90deg, #ffd700, #ffec8b);
+            color: #b8860b;
+            font-weight: bold;
+        }
+
+        .leaderboard-entry .rank {
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .leaderboard-entry .name {
+            flex: 1;
+        }
+
+        .leaderboard-entry .score {
+            font-weight: bold;
+        }
+
+        .game-over-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(152, 251, 152, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .game-over-overlay.show {
+            display: flex;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .game-over-content {
+            background: white;
+            padding: 40px;
+            border-radius: 30px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(60, 179, 113, 0.4);
+            animation: bounceIn 0.5s;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .game-over-content h2 {
+            color: #ff69b4;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .game-over-content .final-score {
+            font-size: 1.5em;
+            color: #3cb371;
+            margin-bottom: 20px;
+        }
+
+        .game-over-content .time-up {
+            font-size: 1.2em;
+            color: #ff69b4;
+            margin-bottom: 10px;
+        }
+
+        .replay-btn {
+            background: linear-gradient(135deg, #ff69b4, #ffb6c1);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.3em;
+            color: white;
+            border-radius: 25px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(255, 105, 180, 0.4);
+            margin-top: 10px;
+        }
+
+        .replay-btn:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(255, 105, 180, 0.5);
+        }
+
+        .start-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(240, 255, 240, 0.97);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .start-overlay.hide {
+            display: none;
+        }
+
+        .start-content {
+            background: white;
+            padding: 40px;
+            border-radius: 30px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(60, 179, 113, 0.4);
+        }
+
+        .start-content h2 {
+            color: #ff69b4;
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+
+        .start-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .start-dropdown-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .start-dropdown-group label {
+            font-size: 12px;
+            color: #2e8b57;
+            font-weight: bold;
+        }
+
+        .start-dropdown {
+            background: #98fb98;
+            border: 2px solid #3cb371;
+            padding: 8px 14px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 13px;
+            color: #2e8b57;
+            outline: none;
+            min-width: 120px;
+        }
+
+        .start-dropdown:focus {
+            border-color: #ff69b4;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #3cb371, #98fb98);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.3em;
+            color: white;
+            border-radius: 25px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(60, 179, 113, 0.4);
+            margin-top: 15px;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(60, 179, 113, 0.5);
+        }
+
+        .username-input {
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 3px solid #98fb98;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            font-family: inherit;
+            width: 200px;
+            text-align: center;
+            outline: none;
+        }
+
+        .username-input:focus {
+            border-color: #3cb371;
+            box-shadow: 0 0 10px rgba(60, 179, 113, 0.3);
+        }
+
+        .no-scores {
+            text-align: center;
+            color: #3cb371;
+            font-style: italic;
+            padding: 20px;
+        }
+
+        .hearts-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 99;
+            overflow: hidden;
+        }
+
+        .broken-heart {
+            position: absolute;
+            font-size: 30px;
+            animation: fallHeart 2s forwards;
+        }
+
+        @keyframes fallHeart {
+            0% {
+                transform: translateY(-50px) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Cute Snake Game</h1>
+
+    <div class="game-container">
+        <div class="game-panel">
+            <div class="top-bar">
+                <div class="controls-info">
+                    <h3>Controls</h3>
+                    <p>WASD or Arrow Keys</p>
+                </div>
+
+                <div class="dropdown-group">
+                    <label>Difficulty</label>
+                    <select class="dropdown" id="difficultyMode">
+                        <option value="beginner">Beginner</option>
+                        <option value="standard" selected>Standard</option>
+                        <option value="fast">Fast</option>
+                    </select>
+                </div>
+
+                <div class="dropdown-group">
+                    <label>Fruit Mode</label>
+                    <select class="dropdown" id="fruitMode">
+                        <option value="single">Single Fruit</option>
+                        <option value="multi">Multi-Fruit</option>
+                    </select>
+                </div>
+
+                <div class="dropdown-group">
+                    <label>Barriers</label>
+                    <select class="dropdown" id="barrierMode">
+                        <option value="none">No Barriers</option>
+                        <option value="few">Few Barriers</option>
+                        <option value="many">Many Barriers</option>
+                    </select>
+                </div>
+
+                <div class="dropdown-group">
+                    <label>Time Mode</label>
+                    <select class="dropdown" id="timeMode">
+                        <option value="endless" selected>Endless</option>
+                        <option value="60">1 Minute</option>
+                        <option value="120">2 Minutes</option>
+                        <option value="300">5 Minutes</option>
+                    </select>
+                </div>
+
+                <div class="music-toggle">
+                    <label>Music</label>
+                    <label class="music-switch">
+                        <input type="checkbox" id="musicToggle" checked>
+                        <span class="music-slider"></span>
+                    </label>
+                </div>
+
+                <div class="score-display">Score: <span id="score">0</span></div>
+                <div class="timer-display" id="timerDisplay">Time: <span id="timer">1:00</span></div>
+            </div>
+
+            <canvas id="gameCanvas" width="600" height="600"></canvas>
+        </div>
+
+        <div class="leaderboard">
+            <h2>Leaderboard</h2>
+            <div id="leaderboardList">
+                <p class="no-scores">No scores yet!</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="hearts-container" id="heartsContainer"></div>
+
+    <div class="start-overlay" id="startOverlay">
+        <div class="start-content">
+            <h2>Welcome to Cute Snake!</h2>
+            <p style="color: #3cb371; margin-bottom: 10px;">Enter your name to play:</p>
+            <input type="text" class="username-input" id="startUsername" placeholder="Your name" maxlength="15">
+
+            <div class="start-options">
+                <div class="start-dropdown-group">
+                    <label>Difficulty</label>
+                    <select class="start-dropdown" id="startDifficulty">
+                        <option value="beginner">Beginner</option>
+                        <option value="standard" selected>Standard</option>
+                        <option value="fast">Fast</option>
+                    </select>
+                </div>
+
+                <div class="start-dropdown-group">
+                    <label>Fruit Mode</label>
+                    <select class="start-dropdown" id="startFruitMode">
+                        <option value="single">Single Fruit</option>
+                        <option value="multi">Multi-Fruit</option>
+                    </select>
+                </div>
+
+                <div class="start-dropdown-group">
+                    <label>Barriers</label>
+                    <select class="start-dropdown" id="startBarrierMode">
+                        <option value="none">No Barriers</option>
+                        <option value="few">Few Barriers</option>
+                        <option value="many">Many Barriers</option>
+                    </select>
+                </div>
+
+                <div class="start-dropdown-group">
+                    <label>Time Mode</label>
+                    <select class="start-dropdown" id="startTimeMode">
+                        <option value="endless" selected>Endless</option>
+                        <option value="60">1 Minute</option>
+                        <option value="120">2 Minutes</option>
+                        <option value="300">5 Minutes</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="start-btn" id="startBtn">Play!</button>
+        </div>
+    </div>
+
+    <div class="game-over-overlay" id="gameOverOverlay">
+        <div class="game-over-content">
+            <h2 id="gameOverTitle">Game Over!</h2>
+            <p class="time-up" id="timeUpText" style="display: none;">Time's Up!</p>
+            <p class="final-score">Your score: <span id="finalScore">0</span></p>
+
+            <div class="start-options">
+                <div class="start-dropdown-group">
+                    <label>Difficulty</label>
+                    <select class="start-dropdown" id="replayDifficulty">
+                        <option value="beginner">Beginner</option>
+                        <option value="standard" selected>Standard</option>
+                        <option value="fast">Fast</option>
+                    </select>
+                </div>
+
+                <div class="start-dropdown-group">
+                    <label>Fruit Mode</label>
+                    <select class="start-dropdown" id="replayFruitMode">
+                        <option value="single">Single Fruit</option>
+                        <option value="multi">Multi-Fruit</option>
+                    </select>
+                </div>
+
+                <div class="start-dropdown-group">
+                    <label>Barriers</label>
+                    <select class="start-dropdown" id="replayBarrierMode">
+                        <option value="none">No Barriers</option>
+                        <option value="few">Few Barriers</option>
+                        <option value="many">Many Barriers</option>
+                    </select>
+                </div>
+
+                <div class="start-dropdown-group">
+                    <label>Time Mode</label>
+                    <select class="start-dropdown" id="replayTimeMode">
+                        <option value="endless" selected>Endless</option>
+                        <option value="60">1 Minute</option>
+                        <option value="120">2 Minutes</option>
+                        <option value="300">5 Minutes</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="replay-btn" id="replayBtn">Play Again!</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const gridSize = 20;
+        const tileCount = canvas.width / gridSize;
+
+        let snake = [];
+        let direction = { x: 1, y: 0 };
+        let nextDirection = { x: 1, y: 0 };
+        let fruits = [];
+        let barriers = [];
+        let score = 0;
+        let gameLoop;
+        let gameSpeed = 100;
+        let multipleMode = false;
+        let barrierMode = 'none';
+        let username = '';
+        let gameStarted = false;
+        let timeRemaining = 0;
+        let timerInterval;
+        let isTimedMode = false;
+
+        const fruitTypes = ['strawberry', 'raspberry', 'cherry'];
+
+        // Audio context for music
+        let audioContext;
+        let musicPlaying = false;
+        let musicNodes = [];
+
+        // Music settings
+        const musicEnabled = () => document.getElementById('musicToggle').checked;
+
+        // Create cute house music
+        function initAudio() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playMusic() {
+            if (!audioContext) initAudio();
+            if (!musicEnabled() || musicPlaying) return;
+
+            musicPlaying = true;
+
+            // Happy, bright, bouncy music!
+            const bpm = 130;
+            const beatTime = 60 / bpm;
+
+            // Bright, happy chord progression (C - G - Am - F with added sparkle)
+            const chords = [
+                [523.25, 659.25, 783.99], // C major high (C5, E5, G5)
+                [392.00, 493.88, 587.33], // G major (G4, B4, D5)
+                [440.00, 523.25, 659.25], // A minor (A4, C5, E5)
+                [349.23, 440.00, 523.25]  // F major (F4, A4, C5)
+            ];
+            let chordIndex = 0;
+
+            // Bright, bouncy chords
+            function playChords() {
+                if (!musicPlaying || !musicEnabled()) return;
+
+                function playChord() {
+                    if (!musicPlaying || !musicEnabled()) return;
+
+                    const chord = chords[chordIndex];
+                    chord.forEach((freq, i) => {
+                        const osc = audioContext.createOscillator();
+                        const gain = audioContext.createGain();
+
+                        osc.type = 'triangle';
+                        osc.frequency.value = freq;
+
+                        // Bouncy, staccato envelope
+                        gain.gain.setValueAtTime(0.1, audioContext.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.05, audioContext.currentTime + 0.1);
+                        gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + beatTime * 0.8);
+
+                        osc.connect(gain);
+                        gain.connect(audioContext.destination);
+
+                        osc.start();
+                        osc.stop(audioContext.currentTime + beatTime);
+
+                        musicNodes.push({ osc, gain });
+                    });
+
+                    chordIndex = (chordIndex + 1) % chords.length;
+
+                    if (musicPlaying && musicEnabled()) {
+                        setTimeout(playChord, beatTime * 1000);
+                    }
+                }
+
+                playChord();
+            }
+
+            // Happy, skippy melody
+            function playMelody() {
+                if (!musicPlaying || !musicEnabled()) return;
+
+                // Bright, playful melody
+                const melody = [
+                    783.99, 880.00, 987.77, 880.00, // G5, A5, B5, A5
+                    783.99, 659.25, 783.99, 0,      // G5, E5, G5, rest
+                    880.00, 987.77, 1046.50, 987.77, // A5, B5, C6, B5
+                    880.00, 783.99, 659.25, 0,      // A5, G5, E5, rest
+                    1046.50, 987.77, 880.00, 783.99, // C6, B5, A5, G5
+                    880.00, 783.99, 659.25, 783.99, // A5, G5, E5, G5
+                    523.25, 587.33, 659.25, 783.99, // C5, D5, E5, G5
+                    880.00, 0, 783.99, 0            // A5, rest, G5, rest
+                ];
+                let noteIndex = 0;
+
+                function playNote() {
+                    if (!musicPlaying || !musicEnabled()) return;
+
+                    if (melody[noteIndex] > 0) {
+                        const osc = audioContext.createOscillator();
+                        const gain = audioContext.createGain();
+
+                        osc.type = 'sine';
+                        osc.frequency.value = melody[noteIndex];
+
+                        // Bright, plucky envelope
+                        gain.gain.setValueAtTime(0.15, audioContext.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.08, audioContext.currentTime + 0.05);
+                        gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + beatTime * 0.4);
+
+                        osc.connect(gain);
+                        gain.connect(audioContext.destination);
+
+                        osc.start();
+                        osc.stop(audioContext.currentTime + beatTime * 0.5);
+
+                        musicNodes.push({ osc, gain });
+                    }
+
+                    noteIndex = (noteIndex + 1) % melody.length;
+
+                    if (musicPlaying && musicEnabled()) {
+                        setTimeout(playNote, beatTime * 250);
+                    }
+                }
+
+                setTimeout(playNote, beatTime * 500);
+            }
+
+            // Bouncy bass
+            function playBass() {
+                if (!musicPlaying || !musicEnabled()) return;
+
+                const bassPattern = [
+                    130.81, 0, 130.81, 0, // C3, rest, C3, rest
+                    98.00, 0, 98.00, 0,   // G2, rest, G2, rest
+                    110.00, 0, 110.00, 0, // A2, rest, A2, rest
+                    87.31, 0, 87.31, 0    // F2, rest, F2, rest
+                ];
+                let noteIndex = 0;
+
+                function playBassNote() {
+                    if (!musicPlaying || !musicEnabled()) return;
+
+                    if (bassPattern[noteIndex] > 0) {
+                        const osc = audioContext.createOscillator();
+                        const gain = audioContext.createGain();
+
+                        osc.type = 'sine';
+                        osc.frequency.value = bassPattern[noteIndex];
+
+                        // Punchy bass
+                        gain.gain.setValueAtTime(0.2, audioContext.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + beatTime * 0.4);
+
+                        osc.connect(gain);
+                        gain.connect(audioContext.destination);
+
+                        osc.start();
+                        osc.stop(audioContext.currentTime + beatTime * 0.5);
+
+                        musicNodes.push({ osc, gain });
+                    }
+
+                    noteIndex = (noteIndex + 1) % bassPattern.length;
+
+                    if (musicPlaying && musicEnabled()) {
+                        setTimeout(playBassNote, beatTime * 250);
+                    }
+                }
+
+                playBassNote();
+            }
+
+            // Happy, light drums
+            function playDrums() {
+                if (!musicPlaying || !musicEnabled()) return;
+
+                let beatCount = 0;
+
+                function playBeat() {
+                    if (!musicPlaying || !musicEnabled()) return;
+
+                    // Kick on 1 and 3
+                    if (beatCount % 4 === 0 || beatCount % 4 === 2) {
+                        const kick = audioContext.createOscillator();
+                        const kickGain = audioContext.createGain();
+
+                        kick.type = 'sine';
+                        kick.frequency.setValueAtTime(120, audioContext.currentTime);
+                        kick.frequency.exponentialRampToValueAtTime(60, audioContext.currentTime + 0.08);
+
+                        kickGain.gain.setValueAtTime(0.25, audioContext.currentTime);
+                        kickGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+
+                        kick.connect(kickGain);
+                        kickGain.connect(audioContext.destination);
+
+                        kick.start();
+                        kick.stop(audioContext.currentTime + 0.15);
+
+                        musicNodes.push({ osc: kick, gain: kickGain });
+                    }
+
+                    // Clap/snare on 2 and 4
+                    if (beatCount % 4 === 1 || beatCount % 4 === 3) {
+                        const clap = audioContext.createOscillator();
+                        const clapGain = audioContext.createGain();
+
+                        clap.type = 'triangle';
+                        clap.frequency.value = 300;
+
+                        clapGain.gain.setValueAtTime(0.12, audioContext.currentTime);
+                        clapGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.08);
+
+                        clap.connect(clapGain);
+                        clapGain.connect(audioContext.destination);
+
+                        clap.start();
+                        clap.stop(audioContext.currentTime + 0.08);
+
+                        musicNodes.push({ osc: clap, gain: clapGain });
+                    }
+
+                    // Bright hi-hat on every 8th
+                    const hat = audioContext.createOscillator();
+                    const hatGain = audioContext.createGain();
+                    const hatFilter = audioContext.createBiquadFilter();
+
+                    hat.type = 'square';
+                    hat.frequency.value = 8000;
+
+                    hatFilter.type = 'highpass';
+                    hatFilter.frequency.value = 9000;
+
+                    hatGain.gain.setValueAtTime(0.025, audioContext.currentTime);
+                    hatGain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.03);
+
+                    hat.connect(hatFilter);
+                    hatFilter.connect(hatGain);
+                    hatGain.connect(audioContext.destination);
+
+                    hat.start();
+                    hat.stop(audioContext.currentTime + 0.03);
+
+                    musicNodes.push({ osc: hat, gain: hatGain });
+
+                    beatCount++;
+
+                    if (musicPlaying && musicEnabled()) {
+                        setTimeout(playBeat, beatTime * 250);
+                    }
+                }
+
+                playBeat();
+            }
+
+            // Sparkly arpeggios for extra happiness
+            function playSparkle() {
+                if (!musicPlaying || !musicEnabled()) return;
+
+                const sparkleNotes = [1318.51, 1567.98, 1760.00, 1567.98, 1318.51]; // E6, G6, A6, G6, E6
+                let noteIndex = 0;
+
+                function sparkle() {
+                    if (!musicPlaying || !musicEnabled()) return;
+
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+
+                    osc.type = 'sine';
+                    osc.frequency.value = sparkleNotes[noteIndex];
+
+                    gain.gain.setValueAtTime(0.04, audioContext.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3);
+
+                    osc.connect(gain);
+                    gain.connect(audioContext.destination);
+
+                    osc.start();
+                    osc.stop(audioContext.currentTime + 0.3);
+
+                    musicNodes.push({ osc, gain });
+
+                    noteIndex = (noteIndex + 1) % sparkleNotes.length;
+
+                    if (musicPlaying && musicEnabled()) {
+                        setTimeout(sparkle, beatTime * 500);
+                    }
+                }
+
+                setTimeout(sparkle, beatTime * 1000);
+            }
+
+            playChords();
+            playBass();
+            playMelody();
+            playDrums();
+            playSparkle();
+        }
+
+        function stopMusic() {
+            musicPlaying = false;
+            musicNodes.forEach(node => {
+                try {
+                    if (node.osc) node.osc.stop();
+                } catch (e) {}
+            });
+            musicNodes = [];
+        }
+
+        // Game over sound effect
+        function playGameOverSound() {
+            if (!audioContext) initAudio();
+
+            const notes = [400, 350, 300, 250];
+            notes.forEach((freq, i) => {
+                setTimeout(() => {
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+
+                    gain.gain.setValueAtTime(0.2, audioContext.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+
+                    osc.connect(gain);
+                    gain.connect(audioContext.destination);
+
+                    osc.start();
+                    osc.stop(audioContext.currentTime + 0.3);
+                }, i * 150);
+            });
+        }
+
+        // Spawn falling broken hearts effect
+        function spawnBrokenHearts() {
+            const container = document.getElementById('heartsContainer');
+            container.innerHTML = '';
+
+            for (let i = 0; i < 15; i++) {
+                const heart = document.createElement('div');
+                heart.className = 'broken-heart';
+                heart.innerHTML = '💔';
+                heart.style.left = Math.random() * 100 + '%';
+                heart.style.animationDelay = Math.random() * 0.5 + 's';
+                heart.style.fontSize = (20 + Math.random() * 20) + 'px';
+                container.appendChild(heart);
+            }
+
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 2500);
+        }
+
+        // Initialize snake
+        function initSnake() {
+            snake = [
+                { x: 8, y: 15 },
+                { x: 7, y: 15 },
+                { x: 6, y: 15 },
+                { x: 5, y: 15 }
+            ];
+        }
+
+        // Spawn fruit
+        function spawnFruit() {
+            let newFruit;
+            let attempts = 0;
+            do {
+                newFruit = {
+                    x: Math.floor(Math.random() * tileCount),
+                    y: Math.floor(Math.random() * tileCount),
+                    type: fruitTypes[Math.floor(Math.random() * fruitTypes.length)]
+                };
+                attempts++;
+            } while ((isOnSnake(newFruit.x, newFruit.y) || isOnFruit(newFruit.x, newFruit.y) || isOnBarrier(newFruit.x, newFruit.y)) && attempts < 100);
+
+            fruits.push(newFruit);
+        }
+
+        function isOnSnake(x, y) {
+            return snake.some(segment => segment.x === x && segment.y === y);
+        }
+
+        function isOnFruit(x, y) {
+            return fruits.some(fruit => fruit.x === x && fruit.y === y);
+        }
+
+        function isOnBarrier(x, y) {
+            return barriers.some(barrier => barrier.x === x && barrier.y === y);
+        }
+
+        // Generate barriers based on mode
+        function generateBarriers() {
+            barriers = [];
+            let barrierCount = 0;
+
+            if (barrierMode === 'few') {
+                barrierCount = 8 + Math.floor(Math.random() * 5); // 8-12 barriers
+            } else if (barrierMode === 'many') {
+                barrierCount = 20 + Math.floor(Math.random() * 10); // 20-29 barriers
+            }
+
+            for (let i = 0; i < barrierCount; i++) {
+                let attempts = 0;
+                let barrier;
+
+                do {
+                    barrier = {
+                        x: Math.floor(Math.random() * tileCount),
+                        y: Math.floor(Math.random() * tileCount)
+                    };
+                    attempts++;
+                } while (
+                    (isOnSnake(barrier.x, barrier.y) ||
+                     isOnBarrier(barrier.x, barrier.y) ||
+                     // Keep barriers away from snake starting position
+                     (barrier.x >= 3 && barrier.x <= 10 && barrier.y >= 13 && barrier.y <= 17)) &&
+                    attempts < 100
+                );
+
+                if (attempts < 100) {
+                    barriers.push(barrier);
+                }
+            }
+        }
+
+        // Draw barriers
+        function drawBarriers() {
+            barriers.forEach(barrier => {
+                const x = barrier.x * gridSize;
+                const y = barrier.y * gridSize;
+
+                // Draw brick-like barrier
+                ctx.fillStyle = '#8b4513';
+                ctx.fillRect(x + 1, y + 1, gridSize - 2, gridSize - 2);
+
+                // Brick pattern
+                ctx.fillStyle = '#a0522d';
+                ctx.fillRect(x + 2, y + 2, gridSize / 2 - 3, gridSize / 2 - 3);
+                ctx.fillRect(x + gridSize / 2, y + gridSize / 2, gridSize / 2 - 3, gridSize / 2 - 3);
+
+                // Highlight
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                ctx.fillRect(x + 2, y + 2, gridSize - 4, 2);
+
+                // Shadow
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.fillRect(x + 2, y + gridSize - 4, gridSize - 4, 2);
+            });
+        }
+
+        // Draw cohesive snake
+        function drawSnake() {
+            if (snake.length === 0) return;
+
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, '#ffb6c1');
+            gradient.addColorStop(0.5, '#ff69b4');
+            gradient.addColorStop(1, '#ffb6c1');
+
+            ctx.strokeStyle = gradient;
+            ctx.lineWidth = gridSize - 4;
+            ctx.beginPath();
+
+            snake.forEach((segment, index) => {
+                const x = segment.x * gridSize + gridSize / 2;
+                const y = segment.y * gridSize + gridSize / 2;
+
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.stroke();
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = gridSize / 3;
+            ctx.beginPath();
+
+            snake.forEach((segment, index) => {
+                const x = segment.x * gridSize + gridSize / 2 - 3;
+                const y = segment.y * gridSize + gridSize / 2 - 3;
+
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.stroke();
+
+            const head = snake[0];
+            const headX = head.x * gridSize + gridSize / 2;
+            const headY = head.y * gridSize + gridSize / 2;
+            const headRadius = gridSize / 2 + 2;
+
+            const headGradient = ctx.createRadialGradient(headX - 3, headY - 3, 0, headX, headY, headRadius);
+            headGradient.addColorStop(0, '#ffcdd5');
+            headGradient.addColorStop(1, '#ff69b4');
+
+            ctx.fillStyle = headGradient;
+            ctx.beginPath();
+            ctx.arc(headX, headY, headRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.beginPath();
+            ctx.arc(headX - 4, headY - 4, headRadius / 2.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            let eyeOffsetX = 0;
+            let eyeOffsetY = 0;
+            if (direction.x === 1) eyeOffsetX = 3;
+            else if (direction.x === -1) eyeOffsetX = -3;
+            if (direction.y === 1) eyeOffsetY = 3;
+            else if (direction.y === -1) eyeOffsetY = -3;
+
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(headX - 4 + eyeOffsetX, headY - 3 + eyeOffsetY, 3, 0, Math.PI * 2);
+            ctx.arc(headX + 4 + eyeOffsetX, headY - 3 + eyeOffsetY, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(headX - 5 + eyeOffsetX, headY - 4 + eyeOffsetY, 1.2, 0, Math.PI * 2);
+            ctx.arc(headX + 3 + eyeOffsetX, headY - 4 + eyeOffsetY, 1.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(headX + eyeOffsetX / 2, headY + 2 + eyeOffsetY / 2, 5, 0.1 * Math.PI, 0.9 * Math.PI);
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(255, 100, 150, 0.4)';
+            ctx.beginPath();
+            ctx.ellipse(headX - 9, headY + 2, 3, 2, 0, 0, Math.PI * 2);
+            ctx.ellipse(headX + 9, headY + 2, 3, 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (snake.length > 1) {
+                const tail = snake[snake.length - 1];
+                const tailX = tail.x * gridSize + gridSize / 2;
+                const tailY = tail.y * gridSize + gridSize / 2;
+
+                ctx.fillStyle = '#ff69b4';
+                ctx.beginPath();
+                ctx.arc(tailX, tailY, gridSize / 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Draw fruit
+        function drawFruit(fruit) {
+            const centerX = fruit.x * gridSize + gridSize / 2;
+            const centerY = fruit.y * gridSize + gridSize / 2;
+
+            ctx.save();
+            ctx.translate(centerX, centerY);
+
+            if (fruit.type === 'strawberry') {
+                ctx.fillStyle = '#ff4757';
+                ctx.beginPath();
+                ctx.moveTo(0, -8);
+                ctx.bezierCurveTo(-10, -4, -10, 8, 0, 11);
+                ctx.bezierCurveTo(10, 8, 10, -4, 0, -8);
+                ctx.fill();
+
+                ctx.fillStyle = '#fffacd';
+                const seedPositions = [[-3, -2], [3, -2], [-4, 3], [4, 3], [0, 5], [-2, 0], [2, 0]];
+                seedPositions.forEach(([sx, sy]) => {
+                    ctx.beginPath();
+                    ctx.ellipse(sx, sy, 1, 1.5, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                ctx.fillStyle = '#2ed573';
+                ctx.beginPath();
+                ctx.ellipse(-4, -9, 4, 2, -0.3, 0, Math.PI * 2);
+                ctx.ellipse(4, -9, 4, 2, 0.3, 0, Math.PI * 2);
+                ctx.fill();
+
+            } else if (fruit.type === 'raspberry') {
+                const positions = [
+                    [0, 0], [-5, -2], [5, -2], [-5, 4], [5, 4], [0, 6], [-2, -6], [2, -6], [0, -3], [0, 3]
+                ];
+                positions.forEach(([px, py]) => {
+                    ctx.fillStyle = '#c0392b';
+                    ctx.beginPath();
+                    ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.beginPath();
+                    ctx.arc(px - 1, py - 1, 1.2, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                ctx.fillStyle = '#27ae60';
+                ctx.beginPath();
+                ctx.ellipse(0, -9, 5, 2.5, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+            } else if (fruit.type === 'cherry') {
+                ctx.strokeStyle = '#27ae60';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(0, -11);
+                ctx.quadraticCurveTo(-4, -6, -6, 0);
+                ctx.moveTo(0, -11);
+                ctx.quadraticCurveTo(4, -6, 6, 0);
+                ctx.stroke();
+
+                ctx.fillStyle = '#2ed573';
+                ctx.beginPath();
+                ctx.ellipse(3, -11, 5, 2.5, 0.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#e74c3c';
+                ctx.beginPath();
+                ctx.arc(-6, 4, 6, 0, Math.PI * 2);
+                ctx.arc(6, 4, 6, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.beginPath();
+                ctx.arc(-8, 2, 2.5, 0, Math.PI * 2);
+                ctx.arc(4, 2, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        // Format time
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Update timer
+        function updateTimer() {
+            if (!isTimedMode) return;
+
+            timeRemaining--;
+            document.getElementById('timer').textContent = formatTime(timeRemaining);
+
+            const timerEl = document.getElementById('timerDisplay');
+            if (timeRemaining <= 10) {
+                timerEl.classList.add('warning');
+            }
+
+            if (timeRemaining <= 0) {
+                gameOver(true);
+            }
+        }
+
+        // Game update
+        function update() {
+            direction = { ...nextDirection };
+
+            const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+
+            if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount) {
+                gameOver(false);
+                return;
+            }
+
+            if (isOnSnake(head.x, head.y)) {
+                gameOver(false);
+                return;
+            }
+
+            // Check barrier collision
+            if (isOnBarrier(head.x, head.y)) {
+                gameOver(false);
+                return;
+            }
+
+            snake.unshift(head);
+
+            const fruitIndex = fruits.findIndex(f => f.x === head.x && f.y === head.y);
+            if (fruitIndex !== -1) {
+                fruits.splice(fruitIndex, 1);
+                score += 10;
+                document.getElementById('score').textContent = score;
+
+                // Play eat sound
+                if (audioContext) {
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = 600;
+                    gain.gain.setValueAtTime(0.1, audioContext.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                    osc.connect(gain);
+                    gain.connect(audioContext.destination);
+                    osc.start();
+                    osc.stop(audioContext.currentTime + 0.1);
+                }
+
+                if (multipleMode) {
+                    spawnFruit();
+                    if (fruits.length < 3) spawnFruit();
+                } else {
+                    spawnFruit();
+                }
+            } else {
+                snake.pop();
+            }
+        }
+
+        // Draw game
+        function draw() {
+            ctx.fillStyle = '#fffef5';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = 'rgba(152, 251, 152, 0.3)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= tileCount; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * gridSize, 0);
+                ctx.lineTo(i * gridSize, canvas.height);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, i * gridSize);
+                ctx.lineTo(canvas.width, i * gridSize);
+                ctx.stroke();
+            }
+
+            drawBarriers();
+            fruits.forEach(fruit => drawFruit(fruit));
+            drawSnake();
+        }
+
+        // Game loop
+        function gameLoopFn() {
+            update();
+            draw();
+        }
+
+        // Game over
+        function gameOver(timeUp = false) {
+            clearInterval(gameLoop);
+            clearInterval(timerInterval);
+            gameStarted = false;
+
+            stopMusic();
+            playGameOverSound();
+            spawnBrokenHearts();
+
+            canvas.classList.add('shake');
+            setTimeout(() => canvas.classList.remove('shake'), 500);
+
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('timeUpText').style.display = timeUp ? 'block' : 'none';
+            document.getElementById('gameOverTitle').textContent = timeUp ? 'Time\'s Up!' : 'Game Over!';
+
+            // Sync current settings to replay dropdowns
+            document.getElementById('replayDifficulty').value = document.getElementById('difficultyMode').value;
+            document.getElementById('replayFruitMode').value = document.getElementById('fruitMode').value;
+            document.getElementById('replayBarrierMode').value = document.getElementById('barrierMode').value;
+            document.getElementById('replayTimeMode').value = document.getElementById('timeMode').value;
+
+            document.getElementById('gameOverOverlay').classList.add('show');
+
+            saveScore(username, score);
+            updateLeaderboard();
+        }
+
+        // Save score to localStorage
+        function saveScore(name, score) {
+            let leaderboard = JSON.parse(localStorage.getItem('snakeLeaderboard')) || [];
+            leaderboard.push({ name, score });
+            leaderboard.sort((a, b) => b.score - a.score);
+            leaderboard = leaderboard.slice(0, 10);
+            localStorage.setItem('snakeLeaderboard', JSON.stringify(leaderboard));
+        }
+
+        // Update leaderboard display
+        function updateLeaderboard() {
+            const leaderboard = JSON.parse(localStorage.getItem('snakeLeaderboard')) || [];
+            const listEl = document.getElementById('leaderboardList');
+
+            if (leaderboard.length === 0) {
+                listEl.innerHTML = '<p class="no-scores">No scores yet!</p>';
+                return;
+            }
+
+            listEl.innerHTML = leaderboard.map((entry, index) => `
+                <div class="leaderboard-entry">
+                    <span class="rank">#${index + 1}</span>
+                    <span class="name">${entry.name}</span>
+                    <span class="score">${entry.score}</span>
+                </div>
+            `).join('');
+        }
+
+        // Get game speed based on difficulty
+        function getGameSpeed() {
+            const difficulty = document.getElementById('difficultyMode').value;
+            switch (difficulty) {
+                case 'beginner': return 180;
+                case 'standard': return 100;
+                case 'fast': return 60;
+                default: return 100;
+            }
+        }
+
+        // Start game
+        function startGame() {
+            initSnake();
+            fruits = [];
+            score = 0;
+            direction = { x: 1, y: 0 };
+            nextDirection = { x: 1, y: 0 };
+            document.getElementById('score').textContent = score;
+
+            gameSpeed = getGameSpeed();
+            multipleMode = document.getElementById('fruitMode').value === 'multi';
+            barrierMode = document.getElementById('barrierMode').value;
+
+            // Generate barriers
+            generateBarriers();
+
+            // Setup timer
+            const timeMode = document.getElementById('timeMode').value;
+            isTimedMode = timeMode !== 'endless';
+            const timerDisplay = document.getElementById('timerDisplay');
+
+            if (isTimedMode) {
+                timeRemaining = parseInt(timeMode);
+                document.getElementById('timer').textContent = formatTime(timeRemaining);
+                timerDisplay.classList.add('show');
+                timerDisplay.classList.remove('warning');
+                timerInterval = setInterval(updateTimer, 1000);
+            } else {
+                timerDisplay.classList.remove('show');
+            }
+
+            spawnFruit();
+            if (multipleMode) {
+                spawnFruit();
+                spawnFruit();
+            }
+
+            draw();
+            gameStarted = true;
+            gameLoop = setInterval(gameLoopFn, gameSpeed);
+
+            if (musicEnabled()) {
+                playMusic();
+            }
+        }
+
+        // Controls
+        document.addEventListener('keydown', (e) => {
+            if (!gameStarted) return;
+
+            switch (e.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    if (direction.y !== 1) nextDirection = { x: 0, y: -1 };
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    if (direction.y !== -1) nextDirection = { x: 0, y: 1 };
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    if (direction.x !== 1) nextDirection = { x: -1, y: 0 };
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    if (direction.x !== -1) nextDirection = { x: 1, y: 0 };
+                    break;
+            }
+        });
+
+        // Music toggle
+        document.getElementById('musicToggle').addEventListener('change', (e) => {
+            if (e.target.checked && gameStarted) {
+                playMusic();
+            } else {
+                stopMusic();
+            }
+        });
+
+        // Start button
+        document.getElementById('startBtn').addEventListener('click', () => {
+            const nameInput = document.getElementById('startUsername');
+            username = nameInput.value.trim() || 'Player';
+
+            // Sync dropdowns from start screen to game dropdowns
+            document.getElementById('difficultyMode').value = document.getElementById('startDifficulty').value;
+            document.getElementById('fruitMode').value = document.getElementById('startFruitMode').value;
+            document.getElementById('barrierMode').value = document.getElementById('startBarrierMode').value;
+            document.getElementById('timeMode').value = document.getElementById('startTimeMode').value;
+
+            document.getElementById('startOverlay').classList.add('hide');
+            initAudio();
+            startGame();
+        });
+
+        // Enter key on username input
+        document.getElementById('startUsername').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('startBtn').click();
+            }
+        });
+
+        // Replay button
+        document.getElementById('replayBtn').addEventListener('click', () => {
+            // Sync dropdowns from game over screen to game dropdowns
+            document.getElementById('difficultyMode').value = document.getElementById('replayDifficulty').value;
+            document.getElementById('fruitMode').value = document.getElementById('replayFruitMode').value;
+            document.getElementById('barrierMode').value = document.getElementById('replayBarrierMode').value;
+            document.getElementById('timeMode').value = document.getElementById('replayTimeMode').value;
+
+            document.getElementById('gameOverOverlay').classList.remove('show');
+            startGame();
+        });
+
+        // Initialize - clear leaderboard on page load
+        localStorage.removeItem('snakeLeaderboard');
+        updateLeaderboard();
+        initSnake();
+        draw();
+    </script>
+</body>
+</html>
