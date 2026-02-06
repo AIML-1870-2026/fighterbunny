@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boids Lab - Interactive Flocking Simulation</title>
+    <link rel="stylesheet" href="boids.css">
+</head>
+<body>
+    <div id="controls">
+        <h1>🐦 Boids Lab</h1>
+        <p class="subtitle">Interactive Flocking Simulation</p>
+
+        <!-- Stats Section -->
+        <div class="section">
+            <div class="section-title">📊 Statistics</div>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-value" id="fps">60</div>
+                    <div class="stat-label">FPS</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="boid-count">150</div>
+                    <div class="stat-label">Boids</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="avg-speed">0.0</div>
+                    <div class="stat-label">Avg Speed</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="avg-neighbors">0.0</div>
+                    <div class="stat-label">Avg Neighbors</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Playback Controls -->
+        <div class="section">
+            <div class="section-title">⏯️ Playback</div>
+            <div class="button-row">
+                <button id="pause-btn" onclick="togglePause()">⏸ Pause</button>
+                <button onclick="resetSimulation()">🔄 Reset</button>
+                <button onclick="addBoids(10)">+ 10 Boids</button>
+                <button onclick="removeBoids(10)">- 10 Boids</button>
+            </div>
+        </div>
+
+        <!-- Presets -->
+        <div class="section">
+            <div class="section-title">🎯 Behavior Presets</div>
+            <div class="button-row">
+                <button class="preset-btn" onclick="applyPreset('schooling')" data-tooltip="High alignment creates synchronized movement like fish schools">🐟 Schooling</button>
+                <button class="preset-btn" onclick="applyPreset('chaotic')" data-tooltip="Low alignment and small radius creates erratic, insect-like swarms">🦟 Chaotic</button>
+                <button class="preset-btn" onclick="applyPreset('cluster')" data-tooltip="High cohesion pulls boids into tight groups">🎯 Cluster</button>
+            </div>
+        </div>
+
+        <!-- Main Parameters -->
+        <div class="section">
+            <div class="section-title">⚙️ Flocking Parameters</div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span data-tooltip="How strongly boids avoid crowding nearby flockmates. Higher = more personal space.">Separation</span>
+                    <span class="value-display" id="separation-val">0.05</span>
+                </div>
+                <input type="range" id="separation" min="0" max="0.2" step="0.005" value="0.05" oninput="updateParam('separation', this.value)">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span data-tooltip="How strongly boids match the direction of nearby flockmates. Higher = more coordinated turns.">Alignment</span>
+                    <span class="value-display" id="alignment-val">0.05</span>
+                </div>
+                <input type="range" id="alignment" min="0" max="0.2" step="0.005" value="0.05" oninput="updateParam('alignment', this.value)">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span data-tooltip="How strongly boids move toward the center of nearby flockmates. Higher = tighter flocks.">Cohesion</span>
+                    <span class="value-display" id="cohesion-val">0.005</span>
+                </div>
+                <input type="range" id="cohesion" min="0" max="0.02" step="0.001" value="0.005" oninput="updateParam('cohesion', this.value)">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span data-tooltip="How far each boid can 'see' to detect neighbors. Larger = more global awareness.">Neighbor Radius</span>
+                    <span class="value-display" id="radius-val">75</span>
+                </div>
+                <input type="range" id="radius" min="20" max="200" step="5" value="75" oninput="updateParam('radius', this.value)">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span data-tooltip="Maximum velocity for each boid. Higher = faster, more energetic movement.">Max Speed</span>
+                    <span class="value-display" id="speed-val">4</span>
+                </div>
+                <input type="range" id="speed" min="1" max="10" step="0.5" value="4" oninput="updateParam('speed', this.value)">
+            </div>
+        </div>
+
+        <!-- Boundary Mode -->
+        <div class="section">
+            <div class="section-title">🔲 Boundary Behavior</div>
+            <div class="toggle-group">
+                <button class="toggle-btn active" id="bounce-btn" onclick="setBoundaryMode('bounce')" data-tooltip="Boids turn away from edges, staying within bounds">Bounce</button>
+                <button class="toggle-btn" id="wrap-btn" onclick="setBoundaryMode('wrap')" data-tooltip="Boids wrap around to the opposite side (toroidal space)">Wrap</button>
+            </div>
+        </div>
+
+        <!-- Mouse Interaction -->
+        <div class="section">
+            <div class="section-title">🖱️ Mouse Interaction</div>
+            <div class="mouse-mode">
+                <button class="mouse-btn" id="mouse-off" onclick="setMouseMode('off')">Off</button>
+                <button class="mouse-btn active" id="mouse-attract" onclick="setMouseMode('attract')" data-tooltip="Boids are drawn toward your cursor">Attract</button>
+                <button class="mouse-btn" id="mouse-repel" onclick="setMouseMode('repel')" data-tooltip="Boids flee from your cursor like a predator">Repel</button>
+            </div>
+            <p style="font-size: 0.7em; margin-top: 8px; opacity: 0.6;">Click canvas to spawn boids at cursor</p>
+        </div>
+
+        <!-- Obstacles -->
+        <div class="section">
+            <div class="section-title">🚧 Obstacles</div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="obstacles-enabled" onchange="toggleObstacles()" checked>
+                <label for="obstacles-enabled">Enable obstacle avoidance</label>
+            </div>
+            <div class="button-row">
+                <button onclick="addObstacle()" data-tooltip="Add a new obstacle at random position">+ Add</button>
+                <button onclick="clearObstacles()" data-tooltip="Remove all obstacles">Clear All</button>
+            </div>
+            <p style="font-size: 0.7em; margin-top: 8px; opacity: 0.6;">Shift+Click to place obstacle, drag to move</p>
+        </div>
+
+        <!-- Visual Settings -->
+        <div class="section">
+            <div class="section-title">🎨 Visual Settings</div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="trails-enabled" onchange="toggleTrails()" checked>
+                <label for="trails-enabled">Motion trails</label>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Trail Length</span>
+                    <span class="value-display" id="trail-val">0.15</span>
+                </div>
+                <input type="range" id="trail-length" min="0.02" max="0.5" step="0.01" value="0.15" oninput="updateTrailLength(this.value)">
+            </div>
+
+            <div style="margin-top: 12px;">
+                <div class="control-label" style="margin-bottom: 8px;">
+                    <span>Theme</span>
+                </div>
+                <div class="theme-btns">
+                    <button class="theme-btn active" id="theme-minimal" onclick="setTheme('minimal')">Minimal</button>
+                    <button class="theme-btn" id="theme-neon" onclick="setTheme('neon')">Neon</button>
+                    <button class="theme-btn" id="theme-nature" onclick="setTheme('nature')">Nature</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="canvas"></canvas>
+        <div class="instructions">
+            Click: spawn boid | Shift+Click: place obstacle | Drag obstacle to move
+        </div>
+        <div class="pause-overlay" id="pause-overlay">⏸ PAUSED</div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script src="boids.js"></script>
+</body>
+</html>
