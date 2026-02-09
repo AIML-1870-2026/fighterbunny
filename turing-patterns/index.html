@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turing Patterns Explorer</title>
+    <link rel="stylesheet" href="turing-patterns.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <h1>Turing Patterns Explorer</h1>
+            <p class="subtitle">Interactive simulation of reaction-diffusion systems</p>
+            <button id="about-btn" class="about-btn">About</button>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Left Sidebar -->
+            <aside class="left-sidebar">
+                <!-- Presets Card -->
+                <div class="card">
+                    <h3 class="card-title">Presets</h3>
+                    <div class="preset-grid" id="preset-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Color Scheme Card -->
+                <div class="card">
+                    <h3 class="card-title">Color Scheme</h3>
+                    <div class="color-grid" id="color-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Parameter Space Card -->
+                <div class="card">
+                    <h3 class="card-title">Parameter Space</h3>
+                    <canvas id="phase-canvas" width="240" height="180"></canvas>
+                </div>
+            </aside>
+
+            <!-- Canvas Area -->
+            <div class="canvas-wrapper">
+                <div class="canvas-container">
+                    <canvas id="simulation-canvas"></canvas>
+                </div>
+                <p class="canvas-hint">Click and drag to add chemical B</p>
+            </div>
+
+            <!-- Right Sidebar -->
+            <aside class="right-sidebar">
+                <!-- Simulation Controls Card -->
+                <div class="card">
+                    <h3 class="card-title">Simulation</h3>
+                    <div class="control-grid">
+                        <button id="play-pause-btn" class="control-btn">Pause</button>
+                        <button id="reset-btn" class="control-btn">Reset</button>
+                        <button id="clear-btn" class="control-btn">Clear All</button>
+                        <button id="save-image-btn" class="control-btn">Save Image</button>
+                    </div>
+                </div>
+
+                <!-- Parameters Card -->
+                <div class="card">
+                    <h3 class="card-title">Parameters</h3>
+
+                    <div class="param-group">
+                        <label class="param-label">Feed Rate (F):</label>
+                        <span class="param-value" id="feed-value">0.039</span>
+                        <input type="range" id="feed-rate" class="param-slider" min="0" max="0.1" step="0.001" value="0.039">
+                    </div>
+
+                    <div class="param-group">
+                        <label class="param-label">Kill Rate (K):</label>
+                        <span class="param-value" id="kill-value">0.058</span>
+                        <input type="range" id="kill-rate" class="param-slider" min="0" max="0.1" step="0.001" value="0.058">
+                    </div>
+
+                    <div class="param-group">
+                        <label class="param-label">Speed:</label>
+                        <span class="param-value" id="speed-value">10x</span>
+                        <input type="range" id="speed-slider" class="param-slider" min="1" max="20" value="10">
+                    </div>
+
+                    <div class="stats">
+                        <div class="stat-item">
+                            <div class="stat-label">FPS</div>
+                            <div class="stat-value" id="fps-counter">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Iterations</div>
+                            <div class="stat-value" id="iteration-counter">0</div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- About Modal -->
+    <div id="about-modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h2>About Turing Patterns</h2>
+            <p>This explorer simulates reaction-diffusion systems that produce Turing patterns - the mathematical basis for many patterns found in nature, from animal coats to seashells.</p>
+            <p>The Gray-Scott model uses two chemicals that react and diffuse at different rates, creating emergent patterns based on the feed (F) and kill (K) parameters.</p>
+            <h3 style="color: #6366f1; margin: 15px 0 10px;">Keyboard Shortcuts</h3>
+            <ul>
+                <li><kbd>Space</kbd> Play/Pause</li>
+                <li><kbd>R</kbd> Reset</li>
+                <li><kbd>C</kbd> Clear</li>
+                <li><kbd>S</kbd> Save Image</li>
+                <li><kbd>1-6</kbd> Load Presets</li>
+            </ul>
+            <button id="close-modal" class="modal-close-btn">Close</button>
+        </div>
+    </div>
+
+    <script src="turing-patterns.js"></script>
+</body>
+</html>
