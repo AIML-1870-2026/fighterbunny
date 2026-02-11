@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Julia Set Explorer</title>
+<link rel="stylesheet" href="julia-set.css">
+</head>
+<body>
+
+<div id="sidebar">
+  <div class="sidebar-header">
+    <h1>Julia Set Explorer</h1>
+    <p>Interactive fractal visualization</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Fractal Type</div>
+    <div class="btn-group">
+      <button class="btn active" data-type="julia">Julia Set</button>
+      <button class="btn" data-type="mandelbrot">Mandelbrot</button>
+      <button class="btn" data-type="burningship">Burning Ship</button>
+    </div>
+  </div>
+
+  <div class="section" id="presetsSection">
+    <div class="section-title">Presets</div>
+    <div class="btn-group" id="presets"></div>
+  </div>
+
+  <div class="section" id="paramSection">
+    <div class="section-title">Parameters</div>
+    <div class="slider-row">
+      <label>c Real</label>
+      <input type="range" id="cReal" min="-2" max="2" step="0.001" value="-0.7269">
+      <span class="val" id="cRealVal">-0.7269</span>
+    </div>
+    <div class="slider-row">
+      <label>c Imag</label>
+      <input type="range" id="cImag" min="-2" max="2" step="0.001" value="0.1889">
+      <span class="val" id="cImagVal">0.1889</span>
+    </div>
+    <div class="slider-row">
+      <label>Iterations</label>
+      <input type="range" id="maxIter" min="20" max="2000" step="10" value="300">
+      <span class="val" id="maxIterVal">300</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Color Scheme</div>
+    <select id="colorScheme">
+      <option value="classic">Classic Blue</option>
+      <option value="fire">Fire</option>
+      <option value="ocean">Ocean</option>
+      <option value="psychedelic" selected>Psychedelic</option>
+      <option value="neon">Neon</option>
+      <option value="sunset">Sunset</option>
+      <option value="grayscale">Grayscale</option>
+      <option value="ice">Ice Crystal</option>
+      <option value="custom">Custom Gradient</option>
+    </select>
+    <div class="gradient-editor" id="gradientEditor" style="display:none">
+      <div class="gradient-preview" id="gradientPreview"></div>
+      <div class="stop-controls">
+        <input type="color" id="stopColor" value="#ff0000">
+        <input type="range" id="stopPos" min="0" max="100" value="50" style="flex:1;height:4px">
+        <button class="btn" id="addStop">+</button>
+        <button class="btn danger" id="removeStop">-</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="section">
+    <div class="section-title">View Modes</div>
+    <div class="toggle-row">
+      <label>Split View (Mandelbrot-Julia)</label>
+      <div class="toggle" id="splitToggle"></div>
+    </div>
+    <div class="toggle-row">
+      <label>Educational Mode</label>
+      <div class="toggle" id="eduToggle"></div>
+    </div>
+    <div class="toggle-row">
+      <label>Info Panel</label>
+      <div class="toggle" id="infoToggle"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Export</div>
+    <button class="btn full" id="saveBtn">Save Image (PNG)</button>
+    <button class="btn full" id="hiresBtn" style="margin-top:4px">Hi-Res Export</button>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Navigation</div>
+    <button class="btn full" id="resetView">Reset View</button>
+    <p style="font-size:11px;color:var(--text-dim);margin-top:6px">Scroll to zoom. Click+drag to pan.</p>
+  </div>
+</div>
+
+<div id="main">
+  <div id="canvasWrap">
+    <canvas id="fractalCanvas"></canvas>
+    <canvas id="overlayCanvas"></canvas>
+    <div id="coords">0 + 0i | zoom: 1x</div>
+    <div id="renderTime"></div>
+  </div>
+  <div id="splitWrap">
+    <div style="position:relative;flex:1;display:flex">
+      <canvas id="mandelbrotCanvas" style="flex:1"></canvas>
+      <span class="split-label" style="left:8px">Mandelbrot — click to select c</span>
+    </div>
+    <div style="position:relative;flex:1;display:flex;border-left:1px solid var(--border)">
+      <canvas id="juliaCanvas" style="flex:1"></canvas>
+      <span class="split-label" style="left:8px" id="splitJuliaLabel">Julia Set</span>
+    </div>
+  </div>
+  <div class="orbit-panel" id="orbitPanel">
+    <h4>Orbit Visualizer</h4>
+    <p id="orbitInfo"></p>
+    <table id="orbitTable"></table>
+  </div>
+  <div id="infoPanel">
+    <h3 id="infoTitle">Julia Set</h3>
+    <p id="infoText"></p>
+  </div>
+</div>
+
+<div class="hires-modal" id="hiresModal">
+  <div class="hires-content">
+    <h3>High-Resolution Export</h3>
+    <div class="slider-row">
+      <label>Scale</label>
+      <select id="hiresScale">
+        <option value="2">2x</option>
+        <option value="4">4x</option>
+      </select>
+    </div>
+    <p id="hiresInfo" style="font-size:12px;color:var(--text-dim);margin-top:8px"></p>
+    <div class="progress-bar" id="hiresProgress"><div class="fill" id="hiresFill"></div></div>
+    <button class="btn accent full" id="hiresRender">Render & Download</button>
+    <button class="btn full" id="hiresClose" style="margin-top:4px">Cancel</button>
+  </div>
+</div>
+
+<script src="julia-set.js"></script>
+</body>
+</html>
