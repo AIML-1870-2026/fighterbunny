@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Decision Neuron: Should I use his card? 💳</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="decision-neuron.css">
+</head>
+<body>
+  <canvas id="confetti-canvas"></canvas>
+  <button class="sound-toggle" id="sound-toggle" title="Toggle sound">🔊</button>
+
+  <header>
+    <h1>Should I use his card? 💳</h1>
+    <p class="subtitle">Let the neuron decide.</p>
+  </header>
+
+  <div class="neuron-layout" id="neuron-layout">
+    <svg class="lines-svg" id="lines-svg"></svg>
+
+    <div class="factor-column left" id="yes-column">
+      <div class="column-title yes">reasons it's okay</div>
+    </div>
+
+    <div class="center-neuron" id="center-neuron">
+      <div class="neuron-orb-wrapper" id="orb-wrapper">
+        <div class="neuron-ring"></div>
+        <div class="neuron-ring-2"></div>
+        <div class="neuron-orb zone-4" id="neuron-orb">
+          <div class="orb-face" id="orb-face">😏</div>
+          <div class="neuron-score" id="neuron-score">78</div>
+          <div class="neuron-label">score</div>
+        </div>
+      </div>
+      <div class="combo-banner" id="combo-banner"></div>
+      <div class="verdict zone-4" id="verdict">Go for it, babe!</div>
+      <div class="easter-egg" id="easter-egg"></div>
+      <div class="btn-row">
+        <button class="btn" id="reset-btn">Reset all</button>
+        <button class="btn" id="save-btn">Save decision</button>
+        <button class="btn" id="share-btn">Share card</button>
+        <button class="btn" id="custom-btn">+ Custom</button>
+      </div>
+    </div>
+
+    <div class="factor-column right" id="no-column">
+      <div class="column-title no">reasons it's not</div>
+    </div>
+  </div>
+
+  <!-- Decision Boundary Visualizer -->
+  <div class="boundary-section" id="boundary-section">
+    <button class="boundary-toggle" id="boundary-toggle">
+      <span class="boundary-toggle-icon" id="boundary-toggle-icon">&#9654;</span>
+      Decision Boundary Map
+    </button>
+    <div class="boundary-content" id="boundary-content">
+      <div class="boundary-controls">
+        <div class="axis-selector">
+          <label class="axis-label">X Axis</label>
+          <select id="boundary-x-axis" class="boundary-select"></select>
+        </div>
+        <div class="axis-selector">
+          <label class="axis-label">Y Axis</label>
+          <select id="boundary-y-axis" class="boundary-select"></select>
+        </div>
+      </div>
+      <div class="boundary-canvas-wrapper" id="boundary-canvas-wrapper">
+        <div class="boundary-y-label" id="boundary-y-label"></div>
+        <canvas id="boundary-canvas"></canvas>
+        <div class="boundary-x-label" id="boundary-x-label"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="history-section" id="history-section">
+    <div class="history-title">
+      Decision History
+      <button class="history-clear" id="history-clear">clear all</button>
+    </div>
+    <div class="history-list" id="history-list"></div>
+  </div>
+
+  <!-- Custom Factor Modal -->
+  <div class="modal-overlay" id="custom-modal">
+    <div class="modal">
+      <h2>Add Custom Factor</h2>
+      <label>Emoji</label>
+      <input type="text" id="custom-emoji" placeholder="🌟" maxlength="2">
+      <label>Label</label>
+      <input type="text" id="custom-label" placeholder="My custom reason...">
+      <label>Weight (1-30)</label>
+      <input type="number" id="custom-weight" min="1" max="30" value="10">
+      <label>Type</label>
+      <div class="modal-type-row">
+        <button class="modal-type-btn selected" data-type="yes" id="type-yes">Yes Factor</button>
+        <button class="modal-type-btn" data-type="no" id="type-no">No Factor</button>
+      </div>
+      <div class="modal-btns">
+        <button class="btn" id="modal-cancel">Cancel</button>
+        <button class="btn primary" id="modal-add">Add Factor</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Share Card Modal -->
+  <div class="share-card-overlay" id="share-overlay">
+    <div class="share-card" id="share-card">
+      <h2>Decision Neuron Results 💳</h2>
+      <div class="share-score" id="share-score">78</div>
+      <div class="share-verdict" id="share-verdict">Go for it, babe!</div>
+      <div class="share-factors" id="share-factors"></div>
+      <div class="share-brand">decision-neuron.app</div>
+      <button class="btn share-close" id="share-close">Close</button>
+    </div>
+  </div>
+
+  <script src="decision-neuron.js"></script>
+</body>
+</html>
