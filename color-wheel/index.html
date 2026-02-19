@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RGB Color Explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-dot r"></span>
+        <span class="logo-dot g"></span>
+        <span class="logo-dot b"></span>
+        <h1>RGB Explorer</h1>
+      </div>
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-tab="explorer" role="tab" aria-selected="true">Explorer</button>
+        <button class="tab"        data-tab="palette"  role="tab" aria-selected="false">Palette</button>
+        <button class="tab"        data-tab="custom"   role="tab" aria-selected="false">Scale</button>
+      </nav>
+      <button id="open-settings" class="settings-btn" title="Accessibility Settings" aria-label="Open accessibility settings">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
+    <div class="tab-indicator-track"><div class="tab-indicator" id="tab-indicator"></div></div>
+  </header>
+
+  <main class="app-main">
+
+    <!-- ══════════════════════════════════════
+         EXPLORER TAB
+    ══════════════════════════════════════ -->
+    <section id="explorer" class="tab-panel active" role="tabpanel">
+      <div class="explorer-layout">
+
+        <!-- Canvas -->
+        <div class="canvas-wrap" id="canvas-wrap">
+          <canvas id="spotlight-canvas"></canvas>
+          <p class="canvas-hint">Drag the glowing circles to mix light</p>
+        </div>
+
+        <!-- Sidebar -->
+        <aside class="explorer-controls card">
+
+          <div class="card-header">
+            <span class="card-label">RGB Channels</span>
+            <button id="reset-btn" class="icon-btn" title="Reset positions">↺</button>
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-label">
+              <span class="channel-pip" style="background:#ff4055"></span>
+              <span class="channel-name">Red</span>
+              <span class="slider-val" id="r-val">128</span>
+            </div>
+            <input type="range" id="r-slider" class="slider slider-r" min="0" max="255" value="128" />
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-label">
+              <span class="channel-pip" style="background:#3dff7a"></span>
+              <span class="channel-name">Green</span>
+              <span class="slider-val" id="g-val">128</span>
+            </div>
+            <input type="range" id="g-slider" class="slider slider-g" min="0" max="255" value="128" />
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-label">
+              <span class="channel-pip" style="background:#4a8eff"></span>
+              <span class="channel-name">Blue</span>
+              <span class="slider-val" id="b-val">128</span>
+            </div>
+            <input type="range" id="b-slider" class="slider slider-b" min="0" max="255" value="128" />
+          </div>
+
+          <!-- Output -->
+          <div class="color-output">
+            <div class="swatch-wrap">
+              <div id="color-swatch" class="color-swatch"></div>
+            </div>
+            <div class="color-meta">
+              <button id="hex-display" class="hex-code" title="Click to copy">#808080</button>
+              <div id="rgb-display" class="rgb-values">R: 128 &nbsp; G: 128 &nbsp; B: 128</div>
+              <div id="color-name" class="color-name">Gray</div>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button id="send-to-palette" class="cta-btn">Palette →</button>
+            <button id="send-to-scale"   class="cta-btn secondary">Scale →</button>
+          </div>
+
+        </aside>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         PALETTE TAB
+    ══════════════════════════════════════ -->
+    <section id="palette" class="tab-panel" role="tabpanel">
+      <div class="palette-layout">
+
+        <!-- Left controls -->
+        <div class="palette-controls card">
+          <div class="card-header"><span class="card-label">Palette Generator</span></div>
+
+          <div class="control-group">
+            <label class="control-label">Base Color</label>
+            <div class="base-color-row">
+              <input type="color" id="color-picker" value="#8040ff" />
+              <input type="text"  id="hex-input" class="hex-text-input" value="#8040FF" maxlength="7" spellcheck="false" />
+            </div>
+          </div>
+
+          <div class="control-group">
+            <label class="control-label">Harmony</label>
+            <div class="harmony-grid">
+              <button class="harmony-btn active" data-harmony="complementary">Complementary</button>
+              <button class="harmony-btn"        data-harmony="analogous">Analogous</button>
+              <button class="harmony-btn"        data-harmony="triadic">Triadic</button>
+              <button class="harmony-btn"        data-harmony="split-complementary">Split-Comp</button>
+            </div>
+          </div>
+
+          <button id="randomize-btn" class="ghost-btn full-width">⚄ Randomize</button>
+
+          <div class="wheel-section">
+            <label class="control-label">Color Wheel</label>
+            <div class="wheel-wrap">
+              <canvas id="wheel-canvas" width="180" height="180"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right content -->
+        <div class="palette-right">
+          <div class="swatches-section card">
+            <div class="card-header"><span class="card-label">Generated Palette</span></div>
+            <div id="palette-swatches" class="swatches-grid"></div>
+          </div>
+
+          <div class="preview-section card">
+            <div class="card-header"><span class="card-label">UI Preview</span></div>
+            <div id="ui-preview" class="ui-preview">
+              <div class="preview-header" id="preview-header">
+                <span class="preview-logo" id="preview-logo">◉ Studio</span>
+                <button class="preview-nav-btn" id="preview-nav-btn">Menu</button>
+              </div>
+              <div class="preview-body" id="preview-body">
+                <h3 class="preview-heading" id="preview-heading">Beautiful Color Palette</h3>
+                <p class="preview-text" id="preview-text">Your generated palette applied to a real UI. Typography, buttons, and backgrounds all pulling from the same color story.</p>
+                <div class="preview-actions">
+                  <button class="preview-btn primary"   id="preview-btn-primary">Get Started</button>
+                  <button class="preview-btn secondary" id="preview-btn-secondary">Learn More</button>
+                </div>
+              </div>
+              <div class="preview-footer" id="preview-footer">
+                <span id="preview-tag" class="preview-tag">Colors by RGB Explorer</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         CUSTOM SCALE TAB
+    ══════════════════════════════════════ -->
+    <section id="custom" class="tab-panel" role="tabpanel">
+      <div class="custom-layout">
+
+        <!-- Controls -->
+        <div class="scale-controls card">
+          <div class="card-header"><span class="card-label">Scale Builder</span></div>
+          <p class="card-desc">Generate a full tint &amp; shade scale from a single color — like a design token palette.</p>
+
+          <div class="control-group">
+            <label class="control-label">Base Color</label>
+            <div class="base-color-row">
+              <input type="color" id="scale-picker"    value="#8040ff" />
+              <input type="text"  id="scale-hex-input" class="hex-text-input" value="#8040FF" maxlength="7" spellcheck="false" />
+            </div>
+          </div>
+
+          <div class="control-group">
+            <label class="control-label">Number of Shades</label>
+            <div class="count-btns">
+              <button class="count-btn"        data-count="5">5</button>
+              <button class="count-btn active" data-count="7">7</button>
+              <button class="count-btn"        data-count="9">9</button>
+              <button class="count-btn"        data-count="11">11</button>
+            </div>
+          </div>
+
+          <button id="use-explorer-color" class="ghost-btn full-width">← Use Explorer Color</button>
+
+          <button id="generate-scale-btn" class="cta-btn">Generate Scale</button>
+        </div>
+
+        <!-- Results -->
+        <div class="scale-results">
+          <div class="scale-results-header">
+            <span class="card-label">Your Palette</span>
+            <button id="export-css-btn" class="ghost-btn">&#60;/&#62; Export CSS</button>
+          </div>
+
+          <div id="scale-swatches" class="scale-strip"></div>
+
+          <div id="css-export-box" class="css-export-box" hidden>
+            <div class="export-toolbar">
+              <span class="export-label">CSS Variables</span>
+              <button id="copy-css-btn" class="ghost-btn small">Copy All</button>
+            </div>
+            <pre id="css-export-code" class="css-code"></pre>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Settings overlay (backdrop) -->
+  <div id="settings-overlay" class="settings-overlay" aria-hidden="true"></div>
+
+  <!-- Settings drawer -->
+  <aside id="settings-drawer" class="settings-drawer" role="dialog" aria-modal="true" aria-label="Accessibility Settings" hidden>
+    <div class="settings-hd">
+      <span class="settings-title">Accessibility</span>
+      <button id="close-settings" class="icon-btn" aria-label="Close settings">✕</button>
+    </div>
+
+    <div class="settings-body">
+
+      <section class="settings-section">
+        <div class="settings-section-title">Color Vision</div>
+        <p class="settings-section-desc">Simulate how palettes appear to people with different types of color vision. Applies a filter to the entire content area.</p>
+        <div class="vision-grid" id="vision-grid" role="radiogroup" aria-label="Vision type"></div>
+      </section>
+
+      <div class="settings-sep"></div>
+
+      <section class="settings-section">
+        <div class="settings-section-title">Display</div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-name">Reduced Motion</div>
+            <div class="toggle-desc">Disables animations &amp; transitions</div>
+          </div>
+          <button class="toggle-btn" id="toggle-motion" role="switch" aria-checked="false" aria-label="Toggle reduced motion">
+            <span class="toggle-thumb"></span>
+          </button>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-name">High Contrast</div>
+            <div class="toggle-desc">Increases border and text contrast</div>
+          </div>
+          <button class="toggle-btn" id="toggle-contrast" role="switch" aria-checked="false" aria-label="Toggle high contrast">
+            <span class="toggle-thumb"></span>
+          </button>
+        </div>
+      </section>
+
+    </div>
+  </aside>
+
+  <!-- Active vision mode badge -->
+  <div id="vision-badge" class="vision-mode-badge" aria-live="polite"></div>
+
+  <!-- Colorblindness simulation SVG filters -->
+  <svg id="cb-filters" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none">
+    <defs>
+      <filter id="cb-protanopia" color-interpolation-filters="linearRGB">
+        <feColorMatrix type="matrix" values="0.567 0.433 0 0 0  0.558 0.442 0 0 0  0 0.242 0.758 0 0  0 0 0 1 0"/>
+      </filter>
+      <filter id="cb-deuteranopia" color-interpolation-filters="linearRGB">
+        <feColorMatrix type="matrix" values="0.625 0.375 0 0 0  0.7 0.3 0 0 0  0 0.3 0.7 0 0  0 0 0 1 0"/>
+      </filter>
+      <filter id="cb-tritanopia" color-interpolation-filters="linearRGB">
+        <feColorMatrix type="matrix" values="0.95 0.05 0 0 0  0 0.433 0.567 0 0  0 0.475 0.525 0 0  0 0 0 1 0"/>
+      </filter>
+      <filter id="cb-protanomaly" color-interpolation-filters="linearRGB">
+        <feColorMatrix type="matrix" values="0.817 0.183 0 0 0  0.333 0.667 0 0 0  0 0.125 0.875 0 0  0 0 0 1 0"/>
+      </filter>
+      <filter id="cb-deuteranomaly" color-interpolation-filters="linearRGB">
+        <feColorMatrix type="matrix" values="0.8 0.2 0 0 0  0.258 0.742 0 0 0  0 0.142 0.858 0 0  0 0 0 1 0"/>
+      </filter>
+      <filter id="cb-tritanomaly" color-interpolation-filters="linearRGB">
+        <feColorMatrix type="matrix" values="0.967 0.033 0 0 0  0 0.733 0.267 0 0  0 0.183 0.817 0 0  0 0 0 1 0"/>
+      </filter>
+      <filter id="cb-achromatopsia" color-interpolation-filters="linearRGB">
+        <feColorMatrix type="matrix" values="0.299 0.587 0.114 0 0  0.299 0.587 0.114 0 0  0.299 0.587 0.114 0 0  0 0 0 1 0"/>
+      </filter>
+      <filter id="cb-achromatomaly" color-interpolation-filters="linearRGB">
+        <feColorMatrix type="matrix" values="0.618 0.32 0.062 0 0  0.163 0.775 0.062 0 0  0.163 0.32 0.516 0 0  0 0 0 1 0"/>
+      </filter>
+    </defs>
+  </svg>
+
+  <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
