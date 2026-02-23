@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Emotion in Neuroscience — Accessibility Viewer</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- Neuron background canvas -->
+<canvas id="neuron-bg"></canvas>
+
+<!-- Hidden SVG color-blindness filters -->
+<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;" aria-hidden="true">
+  <defs>
+    <filter id="protanopia-filter">
+      <feColorMatrix type="matrix"
+        values="0.567,0.433,0,0,0  0.558,0.442,0,0,0  0,0.242,0.758,0,0  0,0,0,1,0"/>
+    </filter>
+    <filter id="deuteranopia-filter">
+      <feColorMatrix type="matrix"
+        values="0.625,0.375,0,0,0  0.700,0.300,0,0,0  0,0.300,0.700,0,0  0,0,0,1,0"/>
+    </filter>
+    <filter id="tritanopia-filter">
+      <feColorMatrix type="matrix"
+        values="0.950,0.050,0,0,0  0,0.433,0.567,0,0  0,0.475,0.525,0,0  0,0,0,1,0"/>
+    </filter>
+  </defs>
+</svg>
+
+<div id="app">
+
+  <!-- Left Sidebar: all controls + stats -->
+  <aside id="sidebar">
+
+    <!-- Background Color Panel -->
+    <div class="panel">
+      <h2>Background Color</h2>
+      <div class="slider-row">
+        <label for="bg-r">R</label>
+        <input type="range" id="bg-r" min="0" max="255" value="255" aria-label="Background Red channel" />
+        <input type="number" id="bg-r-num" min="0" max="255" value="255" />
+      </div>
+      <div class="slider-row">
+        <label for="bg-g">G</label>
+        <input type="range" id="bg-g" min="0" max="255" value="255" aria-label="Background Green channel" />
+        <input type="number" id="bg-g-num" min="0" max="255" value="255" />
+      </div>
+      <div class="slider-row">
+        <label for="bg-b">B</label>
+        <input type="range" id="bg-b" min="0" max="255" value="255" aria-label="Background Blue channel" />
+        <input type="number" id="bg-b-num" min="0" max="255" value="255" />
+      </div>
+    </div>
+
+    <!-- Text Size + Vision Panel -->
+    <div class="panel">
+      <h2>Text Size</h2>
+      <div id="font-row">
+        <input type="range" id="font-slider" min="10" max="36" value="16" step="1" aria-label="Font size" />
+        <span id="font-size-label">16px</span>
+      </div>
+
+      <fieldset id="vision-section" style="border:none;padding:0;">
+        <legend>Vision Type</legend>
+        <div class="vision-options">
+          <label><input type="radio" name="vision" value="normal" checked /> Normal</label>
+          <label><input type="radio" name="vision" value="protanopia" /> Protanopia</label>
+          <label><input type="radio" name="vision" value="deuteranopia" /> Deuteranopia</label>
+          <label><input type="radio" name="vision" value="tritanopia" /> Tritanopia</label>
+          <label><input type="radio" name="vision" value="monochromacy" /> Monochromacy</label>
+        </div>
+      </fieldset>
+    </div>
+
+    <!-- Text Color Panel -->
+    <div class="panel">
+      <h2>Text Color</h2>
+      <div class="slider-row">
+        <label for="tx-r">R</label>
+        <input type="range" id="tx-r" min="0" max="255" value="0" aria-label="Text Red channel" />
+        <input type="number" id="tx-r-num" min="0" max="255" value="0" />
+      </div>
+      <div class="slider-row">
+        <label for="tx-g">G</label>
+        <input type="range" id="tx-g" min="0" max="255" value="0" aria-label="Text Green channel" />
+        <input type="number" id="tx-g-num" min="0" max="255" value="0" />
+      </div>
+      <div class="slider-row">
+        <label for="tx-b">B</label>
+        <input type="range" id="tx-b" min="0" max="255" value="0" aria-label="Text Blue channel" />
+        <input type="number" id="tx-b-num" min="0" max="255" value="0" />
+      </div>
+    </div>
+
+    <!-- Color Scheme Presets -->
+    <div class="panel" id="presets-panel">
+      <h2>Color Scheme Presets</h2>
+
+      <p class="preset-cat">High Contrast</p>
+      <button class="preset-btn" data-bg="255,255,255" data-tx="0,0,0">
+        <span class="swatch" style="background:#fff;color:#000">Aa</span>Black on White
+      </button>
+      <button class="preset-btn" data-bg="0,0,0" data-tx="255,255,255">
+        <span class="swatch" style="background:#000;color:#fff">Aa</span>White on Black
+      </button>
+
+      <p class="preset-cat">Low Contrast</p>
+      <button class="preset-btn" data-bg="255,255,255" data-tx="153,153,153">
+        <span class="swatch" style="background:#fff;color:#999">Aa</span>Gray on White
+      </button>
+      <button class="preset-btn" data-bg="238,238,238" data-tx="187,187,187">
+        <span class="swatch" style="background:#eee;color:#bbb">Aa</span>Light Gray
+      </button>
+
+      <p class="preset-cat">Common Schemes</p>
+      <button class="preset-btn" data-bg="255,255,255" data-tx="0,51,102">
+        <span class="swatch" style="background:#fff;color:#003366">Aa</span>Navy on White
+      </button>
+      <button class="preset-btn" data-bg="18,18,18" data-tx="220,220,220">
+        <span class="swatch" style="background:#121212;color:#dcdcdc">Aa</span>Dark Mode
+      </button>
+      <button class="preset-btn" data-bg="253,245,230" data-tx="92,64,51">
+        <span class="swatch" style="background:#fdf5e6;color:#5c4033">Aa</span>Sepia
+      </button>
+
+      <p class="preset-cat">Fails WCAG ✗</p>
+      <button class="preset-btn" data-bg="255,255,255" data-tx="255,204,0">
+        <span class="swatch" style="background:#fff;color:#ffcc00">Aa</span>Yellow on White
+      </button>
+      <button class="preset-btn" data-bg="255,255,255" data-tx="173,216,230">
+        <span class="swatch" style="background:#fff;color:#add8e6">Aa</span>Lt. Blue on White
+      </button>
+      <button class="preset-btn" data-bg="144,238,144" data-tx="255,0,0">
+        <span class="swatch" style="background:#90ee90;color:#ff0000">Aa</span>Red on Green
+      </button>
+    </div>
+
+    <!-- Stats -->
+    <div id="stats" aria-live="polite" role="status">
+      <div class="stat-box bg-lum">
+        <span class="stat-label">Luminosity (BG)</span>
+        <span class="stat-value" id="stat-bg-lum">1.000</span>
+      </div>
+      <div class="stat-box text-lum">
+        <span class="stat-label">Luminosity (Text)</span>
+        <span class="stat-value" id="stat-tx-lum">0.000</span>
+      </div>
+      <div class="stat-box contrast">
+        <span class="stat-label">Contrast Ratio</span>
+        <span class="stat-value" id="stat-contrast">21.00</span>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- Right: Article -->
+  <main id="main">
+    <article id="article">
+      <h1>The Neuroscience of Emotion: How Your Brain Feels</h1>
+      <p>Emotion is not simply a product of the mind—it is a deeply embodied process orchestrated by a network of brain structures collectively known as the limbic system. At the heart of this network sits the amygdala, an almond-shaped cluster of nuclei in the medial temporal lobe. The amygdala acts as the brain's threat detector and emotional amplifier, rapidly tagging incoming sensory information with emotional significance before the prefrontal cortex has had time to consciously process it. This is why fear, joy, or disgust can feel instantaneous—the emotional brain moves faster than thought.</p>
+      <p>The prefrontal cortex (PFC) plays a critical regulatory role in emotional experience. While the amygdala fires first, the ventromedial and dorsolateral regions of the PFC modulate those signals—dampening unnecessary fear responses, sustaining positive affect, and integrating emotion with decision-making. Dysregulation in this amygdala–PFC circuit is implicated in a range of psychiatric conditions, including major depressive disorder, post-traumatic stress disorder, and anxiety disorders. Neuroimaging studies using fMRI have consistently shown reduced PFC activation and heightened amygdala reactivity in patients with these conditions.</p>
+      <p>Beyond the amygdala and PFC, the insula plays an underappreciated role in what neuroscientists call interoception—the brain's sensing of the body's internal state. The insula integrates signals about heart rate, gut sensations, and muscle tension, translating them into the felt quality of an emotion. Antonio Damasio's somatic marker hypothesis proposes that these body-based signals are essential for rational decision-making, not just emotional coloring. Together, these structures remind us that emotion is not the enemy of reason—it is reason's biological foundation.</p>
+    </article>
+  </main>
+
+</div><!-- /app -->
+
+<script src="script.js"></script>
+</body>
+</html>
