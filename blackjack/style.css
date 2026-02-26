@@ -1,0 +1,888 @@
+/* ============================================================
+   VARIABLES & RESET
+   ============================================================ */
+:root {
+  --pink-primary: #F48FB1;
+  --pink-dark:    #C2185B;
+  --bg-deep:      #1A0010;
+  --felt:         #0E0008;
+  --card-back:    #E91E8C;
+  --gold:         #FFD700;
+  --text-light:   #FFE4EF;
+  --text-dark:    #880E4F;
+  --radius-card:  12px;
+  --shadow-card:  0 6px 20px rgba(0,0,0,0.6);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--bg-deep);
+  color: var(--text-light);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ============================================================
+   TOPBAR
+   ============================================================ */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  background: rgba(0,0,0,0.5);
+  border-bottom: 2px solid var(--pink-dark);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(6px);
+}
+
+.logo {
+  font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+  font-weight: 900;
+  color: var(--pink-primary);
+  text-shadow: 0 0 12px rgba(244,143,177,0.6);
+  letter-spacing: 0.5px;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 0.4rem;
+  border-radius: 8px;
+  transition: background 0.2s;
+  line-height: 1;
+}
+.icon-btn:hover { background: rgba(244,143,177,0.15); }
+
+.nav-link {
+  background: transparent;
+  border: 2px solid var(--pink-primary);
+  color: var(--pink-primary);
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.4rem 1rem;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.nav-link:hover {
+  background: var(--pink-primary);
+  color: var(--bg-deep);
+}
+
+/* ============================================================
+   QUICK STATS BAR
+   ============================================================ */
+.quick-stats {
+  display: flex;
+  justify-content: center;
+  gap: clamp(0.5rem, 3vw, 2rem);
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  background: rgba(0,0,0,0.3);
+  border-bottom: 1px solid rgba(194,24,91,0.3);
+}
+
+.qstat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.qstat-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255,228,239,0.5);
+}
+
+.qstat-value {
+  font-size: clamp(0.9rem, 2vw, 1.1rem);
+  font-weight: 900;
+  color: var(--gold);
+}
+
+/* ============================================================
+   CASINO TABLE
+   ============================================================ */
+.table-felt {
+  position: relative;
+  background: var(--felt);
+  border-radius: 80px / 50px;
+  max-width: 720px;
+  margin: 1.5rem auto;
+  padding: 2rem 2.5rem;
+  box-shadow: 0 0 60px rgba(194,24,91,0.2), inset 0 0 40px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
+
+.table-oval {
+  position: absolute;
+  inset: 16px 24px;
+  border: 2.5px solid rgba(194,24,91,0.35);
+  border-radius: 70px / 45px;
+  pointer-events: none;
+}
+
+.zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 130px;
+}
+
+.zone-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: rgba(255,228,239,0.4);
+}
+
+.table-divider {
+  width: 80%;
+  max-width: 400px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(194,24,91,0.4), transparent);
+  margin: 1rem auto;
+}
+
+/* ============================================================
+   HANDS
+   ============================================================ */
+.hand {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  min-height: 105px;
+}
+
+/* ============================================================
+   CARDS
+   ============================================================ */
+.card {
+  width: clamp(60px, 10vw, 78px);
+  height: clamp(84px, 14vw, 109px);
+  perspective: 800px;
+  flex-shrink: 0;
+}
+
+.card-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.4s ease-in-out;
+  border-radius: var(--radius-card);
+}
+
+.card.flipped .card-inner {
+  transform: rotateY(180deg);
+}
+
+.card-front,
+.card-back {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-card);
+  backface-visibility: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+/* Card Back — pink diamond pattern */
+.card-back {
+  background-color: #C2185B;
+  background-image:
+    linear-gradient(45deg, #E91E8C 25%, transparent 25%, transparent 75%, #E91E8C 75%),
+    linear-gradient(45deg, #E91E8C 25%, transparent 25%, transparent 75%, #E91E8C 75%);
+  background-size: 18px 18px;
+  background-position: 0 0, 9px 9px;
+  border: 3px solid rgba(255,255,255,0.15);
+}
+
+/* Card Front */
+.card-front {
+  background: #fff;
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 4px 6px;
+  overflow: hidden;
+}
+
+/* Glossy overlay */
+.card-front::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(130deg, rgba(255,255,255,0.35) 0%, transparent 55%);
+  border-radius: var(--radius-card);
+  pointer-events: none;
+}
+
+.card-corner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+
+.card-corner.bottom-right {
+  transform: rotate(180deg);
+  align-self: flex-end;
+}
+
+.card-rank {
+  font-size: clamp(0.6rem, 1.5vw, 0.8rem);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.card-suit-corner {
+  font-size: clamp(0.55rem, 1.3vw, 0.7rem);
+  line-height: 1;
+}
+
+.card-center {
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+/* Deal slide-in animation */
+@keyframes slideIn {
+  from { transform: translateY(-140px) scale(0.75); opacity: 0; }
+  to   { transform: translateY(0)      scale(1);    opacity: 1; }
+}
+
+.card.dealing {
+  animation: slideIn 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* Score chip */
+.score-chip {
+  background: rgba(0,0,0,0.65);
+  color: var(--gold);
+  border: 2px solid var(--gold);
+  border-radius: 20px;
+  padding: 3px 14px;
+  font-size: 0.95rem;
+  font-weight: 900;
+  min-width: 44px;
+  text-align: center;
+  display: none;
+  transition: color 0.3s;
+}
+.score-chip.show { display: inline-block; }
+.score-chip.bust { color: #FF6B9D; border-color: #FF6B9D; }
+
+/* ============================================================
+   BET SECTION
+   ============================================================ */
+.bet-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.bet-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(0,0,0,0.4);
+  border: 2px solid var(--gold);
+  border-radius: 50px;
+  padding: 0.4rem 1.2rem;
+}
+
+.bet-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255,228,239,0.6);
+}
+
+.bet-value {
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: var(--gold);
+}
+
+.bet-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bet-adj-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--pink-primary);
+  background: transparent;
+  color: var(--pink-primary);
+  font-size: 1.3rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1;
+}
+.bet-adj-btn:hover { background: var(--pink-primary); color: var(--bg-deep); }
+.bet-adj-btn:disabled { opacity: 0.3; cursor: default; }
+
+.custom-bet-input {
+  width: 110px;
+  padding: 0.45rem 0.75rem;
+  border-radius: 50px;
+  border: 2px solid rgba(244,143,177,0.4);
+  background: rgba(0,0,0,0.4);
+  color: var(--text-light);
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.custom-bet-input:focus { border-color: var(--pink-primary); }
+.custom-bet-input::placeholder { color: rgba(255,228,239,0.3); }
+.custom-bet-input:disabled { opacity: 0.3; }
+/* hide number spinners */
+.custom-bet-input::-webkit-outer-spin-button,
+.custom-bet-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.custom-bet-input[type=number] { -moz-appearance: textfield; }
+
+/* ============================================================
+   ACTION BUTTONS
+   ============================================================ */
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 1rem 0.75rem;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.action-btn {
+  padding: 0.6rem 1.3rem;
+  border-radius: 50px;
+  border: none;
+  background: linear-gradient(135deg, var(--pink-primary), var(--pink-dark));
+  color: #fff;
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(0.8rem, 2vw, 0.95rem);
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(194,24,91,0.4);
+  transition: all 0.2s;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.action-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(244,143,177,0.5);
+}
+.action-btn:active:not(:disabled) { transform: translateY(0); }
+
+.action-btn:disabled {
+  opacity: 0.28;
+  cursor: default;
+  pointer-events: none;
+}
+
+.deal-btn {
+  background: linear-gradient(135deg, #FF80AB, var(--pink-dark));
+  font-size: clamp(0.85rem, 2vw, 1rem);
+  font-weight: 900;
+}
+
+.hint-btn {
+  background: linear-gradient(135deg, #7B1FA2, #4A148C);
+  box-shadow: 0 4px 14px rgba(123,31,162,0.4);
+}
+.hint-btn:hover:not(:disabled) { box-shadow: 0 6px 20px rgba(186,104,200,0.6); }
+
+/* Glowing pulse for NEW ROUND button */
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 10px var(--pink-primary), 0 4px 14px rgba(194,24,91,0.4);
+  }
+  50% {
+    box-shadow: 0 0 25px var(--gold), 0 0 50px rgba(255,215,0,0.3), 0 4px 14px rgba(194,24,91,0.4);
+  }
+}
+.glow-pulse { animation: glowPulse 1.4s ease-in-out infinite; }
+
+/* ============================================================
+   HINT BUBBLE
+   ============================================================ */
+.hint-bubble {
+  display: none;
+  max-width: 320px;
+  margin: 0 auto 0.5rem;
+  padding: 0.6rem 1.2rem;
+  background: linear-gradient(135deg, #4A148C, #7B1FA2);
+  border: 2px solid #CE93D8;
+  border-radius: 18px;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #F3E5F5;
+  box-shadow: 0 4px 20px rgba(123,31,162,0.5);
+  position: relative;
+  animation: fadeIn 0.25s ease-out;
+}
+.hint-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #CE93D8;
+}
+.hint-bubble.show { display: block; }
+
+/* ============================================================
+   RESULT BANNER
+   ============================================================ */
+.result-banner {
+  max-width: 600px;
+  margin: 0.25rem auto;
+  padding: 0.6rem 1rem;
+  text-align: center;
+  font-size: clamp(1.3rem, 4vw, 2rem);
+  font-weight: 900;
+  border-radius: 16px;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+}
+
+.result-banner.visible {
+  opacity: 1;
+  transform: scale(1);
+  animation: bannerBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.result-banner.result-win {
+  color: var(--gold);
+  background: rgba(255,215,0,0.12);
+  text-shadow: 0 0 20px rgba(255,215,0,0.5);
+}
+
+.result-banner.result-lose {
+  color: #FF6B9D;
+  background: rgba(255,107,157,0.1);
+}
+
+.result-banner.result-push {
+  color: var(--text-light);
+  background: rgba(255,255,255,0.07);
+}
+
+@keyframes bannerBounce {
+  0%   { transform: scale(0.5); }
+  60%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+/* ============================================================
+   ENCOURAGEMENT
+   ============================================================ */
+.encouragement {
+  text-align: center;
+  font-size: clamp(0.85rem, 2vw, 1rem);
+  font-weight: 700;
+  color: var(--pink-primary);
+  min-height: 1.4rem;
+  padding: 0 1rem 0.5rem;
+  animation: fadeIn 0.4s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   STATS PANEL
+   ============================================================ */
+.panel {
+  max-width: 720px;
+  margin: 1rem auto;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(244,143,177,0.2);
+  border-radius: 20px;
+  padding: 1.25rem 1.5rem;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.panel-title {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--pink-primary);
+  letter-spacing: 0.5px;
+}
+
+.text-btn {
+  background: none;
+  border: 1px solid rgba(244,143,177,0.35);
+  color: rgba(244,143,177,0.7);
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.text-btn:hover { color: var(--pink-primary); border-color: var(--pink-primary); }
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+}
+
+.stat-tile {
+  background: rgba(244,143,177,0.07);
+  border: 1px solid rgba(244,143,177,0.15);
+  border-radius: 14px;
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+}
+
+.stat-tile-val {
+  font-size: clamp(1rem, 2.5vw, 1.4rem);
+  font-weight: 900;
+  color: var(--gold);
+}
+
+.stat-tile-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255,228,239,0.45);
+  margin-top: 4px;
+}
+
+/* ============================================================
+   BETTING HISTORY
+   ============================================================ */
+.history-panel h2 { margin-bottom: 0.75rem; }
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 300px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--pink-dark) transparent;
+}
+.history-list::-webkit-scrollbar { width: 4px; }
+.history-list::-webkit-scrollbar-thumb { background: var(--pink-dark); border-radius: 4px; }
+
+.history-entry {
+  font-size: clamp(0.7rem, 1.8vw, 0.82rem);
+  font-weight: 700;
+  padding: 0.45rem 0.8rem;
+  border-radius: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-win {
+  background: rgba(255,215,0,0.1);
+  border-left: 3px solid var(--gold);
+  color: var(--gold);
+}
+
+.history-lose {
+  background: rgba(194,24,91,0.15);
+  border-left: 3px solid var(--pink-dark);
+  color: #FF6B9D;
+}
+
+.history-push {
+  background: rgba(255,255,255,0.05);
+  border-left: 3px solid rgba(255,228,239,0.3);
+  color: rgba(255,228,239,0.6);
+}
+
+.show-more-btn {
+  margin-top: 0.6rem;
+  display: block;
+}
+
+.hidden { display: none !important; }
+
+/* ============================================================
+   CELEBRATION & EFFECTS
+   ============================================================ */
+.celebration-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.win-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(255,215,0,0.35), transparent 70%);
+  animation: winFlash 1s ease-out forwards;
+}
+
+@keyframes winFlash {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.falling-item {
+  position: absolute;
+  top: -60px;
+  animation: fall linear forwards;
+  will-change: transform;
+  user-select: none;
+}
+
+@keyframes fall {
+  0%   { transform: translateY(0) rotate(0deg);    opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateY(110vh) rotate(540deg); opacity: 0; }
+}
+
+/* Lose screen flash overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0;
+}
+
+body.lose-flash::after {
+  animation: loseFlash 0.6s ease-out forwards;
+  background: rgba(180,0,50,0.28);
+}
+
+@keyframes loseFlash {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Shake animation for player hand on bust */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-10px); }
+  40%       { transform: translateX(10px); }
+  60%       { transform: translateX(-8px); }
+  80%       { transform: translateX(8px); }
+}
+
+.shake { animation: shake 0.55s ease-in-out; }
+
+/* ============================================================
+   ABOUT PAGE
+   ============================================================ */
+#about-view {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.about-wrap { display: flex; flex-direction: column; gap: 1rem; }
+
+.back-btn {
+  align-self: flex-start;
+  background: transparent;
+  border: 2px solid var(--pink-primary);
+  color: var(--pink-primary);
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 0.9rem;
+  padding: 0.45rem 1.1rem;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.back-btn:hover { background: var(--pink-primary); color: var(--bg-deep); }
+
+.about-title {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 900;
+  color: var(--pink-primary);
+  text-align: center;
+}
+
+.about-card {
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(244,143,177,0.2);
+  border-radius: 20px;
+  padding: 1.25rem 1.5rem;
+}
+
+.about-card h2 {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--pink-primary);
+  margin-bottom: 0.6rem;
+}
+
+.about-card p, .about-card li {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--text-light);
+}
+
+.about-card ul {
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.card-val-grid {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.card-val-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-light);
+}
+
+.mini-card {
+  display: inline-block;
+  background: white;
+  color: var(--pink-dark);
+  font-weight: 900;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+.mini-card.ace { color: #C2185B; }
+
+.shortcuts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.shortcuts-grid div {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+kbd {
+  display: inline-block;
+  background: rgba(244,143,177,0.15);
+  border: 2px solid var(--pink-primary);
+  color: var(--pink-primary);
+  border-radius: 6px;
+  padding: 0.15rem 0.5rem;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 900;
+  min-width: 28px;
+  text-align: center;
+}
+
+.suit-decoration {
+  text-align: center;
+  font-size: 2rem;
+  letter-spacing: 1rem;
+  color: var(--pink-primary);
+  opacity: 0.5;
+  margin-top: 0.5rem;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 600px) {
+  .table-felt {
+    border-radius: 40px / 25px;
+    padding: 1.25rem 1rem;
+    margin: 0.75rem auto;
+  }
+  .table-oval { border-radius: 35px / 22px; }
+
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+
+  .actions { gap: 0.4rem; }
+
+  .action-btn {
+    padding: 0.55rem 0.85rem;
+    font-size: 0.78rem;
+  }
+
+  .quick-stats { gap: 0.5rem; }
+
+  .shortcuts-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 400px) {
+  .bet-section { flex-direction: column; }
+  .card-val-grid { flex-direction: column; }
+}

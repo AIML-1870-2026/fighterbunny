@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pink Blackjack 🃏</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── Navigation ────────────────────────────────────────── -->
+  <nav class="topbar">
+    <div class="logo">🃏 Pink Blackjack</div>
+    <div class="nav-right">
+      <button class="icon-btn" id="mute-btn" aria-label="Toggle sound">🔊</button>
+      <button class="nav-link" id="nav-about" aria-label="Go to about page">About</button>
+    </div>
+  </nav>
+
+  <!-- ── Game View ─────────────────────────────────────────── -->
+  <main id="game-view">
+
+    <!-- Quick Stats Bar -->
+    <div class="quick-stats">
+      <div class="qstat">
+        <span class="qstat-label">Balance</span>
+        <span class="qstat-value" id="balance">$1,000</span>
+      </div>
+      <div class="qstat">
+        <span class="qstat-label">Streak</span>
+        <span class="qstat-value" id="streak-display">—</span>
+      </div>
+      <div class="qstat">
+        <span class="qstat-label">Win %</span>
+        <span class="qstat-value" id="win-pct">—</span>
+      </div>
+      <div class="qstat">
+        <span class="qstat-label">Biggest Win</span>
+        <span class="qstat-value" id="biggest-win">—</span>
+      </div>
+    </div>
+
+    <!-- Casino Table -->
+    <div class="table-felt">
+      <div class="table-oval" aria-hidden="true"></div>
+
+      <!-- Dealer Zone -->
+      <div class="zone dealer-zone">
+        <p class="zone-label">Dealer</p>
+        <div class="hand" id="dealer-hand" aria-label="Dealer's hand"></div>
+        <div class="score-chip" id="dealer-score" aria-live="polite"></div>
+      </div>
+
+      <div class="table-divider" aria-hidden="true"></div>
+
+      <!-- Player Zone -->
+      <div class="zone player-zone">
+        <div class="score-chip" id="player-score" aria-live="polite"></div>
+        <div class="hand" id="player-hand" aria-label="Your hand"></div>
+        <p class="zone-label">You</p>
+      </div>
+    </div>
+
+    <!-- Bet Section -->
+    <div class="bet-section">
+      <div class="bet-box">
+        <span class="bet-label">Bet</span>
+        <span class="bet-value" id="bet-display">$25</span>
+      </div>
+      <div class="bet-controls">
+        <button class="bet-adj-btn" id="btn-bet-minus" aria-label="Decrease bet by $25">−</button>
+        <input
+          type="number"
+          id="custom-bet"
+          class="custom-bet-input"
+          placeholder="Custom..."
+          min="5"
+          aria-label="Enter custom bet amount"
+        />
+        <button class="bet-adj-btn" id="btn-bet-plus" aria-label="Increase bet by $25">+</button>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="actions">
+      <button class="action-btn deal-btn" id="btn-deal" aria-label="Deal new round">DEAL [D]</button>
+      <button class="action-btn" id="btn-hit"    disabled aria-label="Hit - draw a card"    aria-disabled="true">HIT [H]</button>
+      <button class="action-btn" id="btn-stand"  disabled aria-label="Stand - end your turn" aria-disabled="true">STAND [S]</button>
+      <button class="action-btn" id="btn-double" disabled aria-label="Double down"             aria-disabled="true">DOUBLE</button>
+      <button class="action-btn hint-btn" id="btn-hint" disabled aria-label="Show strategy hint" aria-disabled="true">HINT 💡</button>
+    </div>
+
+    <!-- Hint Speech Bubble -->
+    <div class="hint-bubble" id="hint-bubble" role="tooltip" aria-live="polite"></div>
+
+    <!-- Result Banner -->
+    <div class="result-banner" id="result-banner" aria-live="assertive" aria-atomic="true"></div>
+
+    <!-- Encouragement Message -->
+    <div class="encouragement" id="encouragement" aria-live="polite"></div>
+
+    <!-- Statistics Panel -->
+    <section class="panel stats-panel" aria-label="Statistics">
+      <div class="panel-head">
+        <h2 class="panel-title">Statistics</h2>
+        <button class="text-btn" id="btn-reset-stats" aria-label="Reset all statistics">Reset</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-tile">
+          <div class="stat-tile-val" id="stat-rounds">0</div>
+          <div class="stat-tile-label">Rounds</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-tile-val" id="stat-winrate">—</div>
+          <div class="stat-tile-label">Win Rate</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-tile-val" id="stat-biggest">—</div>
+          <div class="stat-tile-label">Biggest Win</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-tile-val" id="stat-net">$0</div>
+          <div class="stat-tile-label">Net Gain/Loss</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Betting History -->
+    <section class="panel history-panel" aria-label="Betting history">
+      <h2 class="panel-title">Betting History</h2>
+      <div class="history-list" id="history-list" aria-live="polite"></div>
+      <button class="text-btn show-more-btn hidden" id="btn-show-more">Show More</button>
+    </section>
+
+  </main>
+
+  <!-- ── About View ─────────────────────────────────────────── -->
+  <div id="about-view" class="hidden" role="main" aria-label="About page">
+    <div class="about-wrap">
+      <button class="back-btn" id="btn-back" aria-label="Back to game">← Back to Game</button>
+      <h1 class="about-title">🃏 How to Play Pink Blackjack</h1>
+
+      <div class="about-card">
+        <h2>🎯 The Goal</h2>
+        <p>Get closer to <strong>21</strong> than the dealer without going over. Going over is called a <em>bust</em> — instant loss!</p>
+      </div>
+
+      <div class="about-card">
+        <h2>🃏 Card Values</h2>
+        <div class="card-val-grid">
+          <div class="card-val-item"><span class="mini-card">2–10</span><span>Face Value</span></div>
+          <div class="card-val-item"><span class="mini-card">J Q K</span><span>= 10</span></div>
+          <div class="card-val-item"><span class="mini-card ace">A</span><span>= 1 or 11</span></div>
+        </div>
+      </div>
+
+      <div class="about-card">
+        <h2>🎮 Your Moves</h2>
+        <ul>
+          <li><strong>Hit</strong> — Draw another card</li>
+          <li><strong>Stand</strong> — Keep your hand, let the dealer play</li>
+          <li><strong>Double Down</strong> — Double your bet &amp; receive exactly one more card</li>
+          <li><strong>Hint 💡</strong> — See the optimal basic strategy recommendation</li>
+        </ul>
+      </div>
+
+      <div class="about-card">
+        <h2>🤖 Dealer Rules</h2>
+        <p>The dealer <strong>must hit</strong> on 16 or below and <strong>must stand</strong> on 17 or above — no choice!</p>
+      </div>
+
+      <div class="about-card">
+        <h2>🏆 How to Win</h2>
+        <ul>
+          <li>Beat the dealer's score without busting</li>
+          <li>Dealer goes over 21 (busts)</li>
+          <li><strong>Blackjack</strong>: Ace + 10-value card dealt → pays <strong>1.5×</strong> your bet! 🎉</li>
+        </ul>
+      </div>
+
+      <div class="about-card">
+        <h2>⌨️ Keyboard Shortcuts</h2>
+        <div class="shortcuts-grid">
+          <div><kbd>H</kbd> Hit</div>
+          <div><kbd>S</kbd> Stand</div>
+          <div><kbd>D</kbd> Deal / New Round</div>
+          <div><kbd>M</kbd> Toggle Mute</div>
+        </div>
+      </div>
+
+      <div class="suit-decoration" aria-hidden="true">♥ ♦ ♣ ♠</div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
