@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weather App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Animated background canvas -->
+  <canvas id="bg-canvas" aria-hidden="true"></canvas>
+
+  <!-- Lightning overlay for thunderstorm -->
+  <div id="lightning-overlay" aria-hidden="true"></div>
+
+  <!-- Mist overlay for fog -->
+  <div id="mist-overlay" aria-hidden="true"></div>
+
+  <div class="app-wrapper">
+
+    <!-- Search Bar -->
+    <header class="search-header">
+      <div class="search-container">
+        <input
+          type="text"
+          id="search-input"
+          placeholder="Search any city or zip code..."
+          aria-label="Search for a city or zip code"
+          autocomplete="off"
+        />
+        <button id="search-btn" aria-label="Search weather">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </button>
+      </div>
+      <div id="error-msg" class="error-msg" role="alert" aria-live="polite"></div>
+    </header>
+
+    <!-- Loading State -->
+    <div id="loading" class="loading hidden" aria-live="polite">
+      <div class="spinner"></div>
+      <p>Fetching weather...</p>
+    </div>
+
+    <!-- Main Content -->
+    <main id="weather-content" class="weather-content hidden">
+
+      <!-- Hero Section -->
+      <section class="hero" aria-label="Current weather">
+        <div class="hero-left">
+          <p id="city-name" class="city-name"></p>
+          <p id="country" class="country"></p>
+          <p id="weather-desc" class="weather-desc"></p>
+          <div class="temp-row">
+            <span id="temperature" class="temperature"></span>
+            <span id="unit-label" class="unit">°F</span>
+            <button id="unit-toggle" aria-label="Toggle temperature unit">°C</button>
+          </div>
+          <p id="feels-like" class="feels-like"></p>
+        </div>
+        <div class="hero-right">
+          <img id="weather-icon" class="weather-icon" src="" alt="" />
+        </div>
+      </section>
+
+      <!-- Detail Cards Grid -->
+      <section class="details-grid" aria-label="Weather details">
+        <div class="card" id="card-humidity">
+          <span class="card-label">Humidity</span>
+          <span class="card-value" id="humidity"></span>
+        </div>
+        <div class="card" id="card-minmax">
+          <span class="card-label">High / Low</span>
+          <span class="card-value" id="temp-minmax"></span>
+        </div>
+        <div class="card" id="card-pressure">
+          <span class="card-label">Pressure</span>
+          <span class="card-value" id="pressure"></span>
+        </div>
+        <div class="card" id="card-wind">
+          <span class="card-label">Wind</span>
+          <span class="card-value" id="wind"></span>
+        </div>
+        <div class="card" id="card-visibility">
+          <span class="card-label">Visibility</span>
+          <span class="card-value" id="visibility"></span>
+        </div>
+        <div class="card" id="card-clouds">
+          <span class="card-label">Cloud Cover</span>
+          <span class="card-value" id="clouds"></span>
+        </div>
+        <div class="card" id="card-sunrise">
+          <span class="card-label">Sunrise / Sunset</span>
+          <span class="card-value" id="sun-times"></span>
+        </div>
+        <div class="card" id="card-aqi">
+          <span class="card-label">Air Quality</span>
+          <span class="card-value" id="aqi"></span>
+        </div>
+      </section>
+
+      <!-- 5-Day Forecast -->
+      <section class="forecast-section" aria-label="5-day forecast">
+        <h2 class="forecast-title">5-Day Forecast</h2>
+        <div class="forecast-row" id="forecast-row"></div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
