@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEO WATCH — Near-Earth Object Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- SPLASH SCREEN -->
+<div id="splash" role="dialog" aria-label="Loading splash screen">
+  <canvas id="splash-stars"></canvas>
+  <div id="splash-content">
+    <div id="splash-logo">
+      <svg viewBox="0 0 300 80" xmlns="http://www.w3.org/2000/svg" aria-label="NASA logo">
+        <text x="50%" y="65" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="72" font-weight="600" fill="#00ff9d" letter-spacing="-2">NASA</text>
+      </svg>
+    </div>
+    <div id="splash-title"></div>
+    <div id="splash-subtitle">Near-Earth Object Surveillance Dashboard</div>
+    <div id="splash-progress-wrap"><div id="splash-progress-bar"></div></div>
+    <div id="splash-status">INITIALIZING SYSTEMS...</div>
+  </div>
+  <button id="splash-skip" aria-label="Skip intro">SKIP INTRO →</button>
+</div>
+
+<!-- MAIN DASHBOARD -->
+<div id="dashboard" hidden>
+
+  <!-- HEADER -->
+  <header id="main-header">
+    <div id="header-left">
+      <svg id="nasa-logo" viewBox="0 0 200 50" xmlns="http://www.w3.org/2000/svg" aria-label="NASA">
+        <text x="0" y="42" font-family="IBM Plex Mono, monospace" font-size="48" font-weight="600" fill="var(--accent)">NASA</text>
+      </svg>
+      <div id="header-title">
+        <span class="title-main">NEO WATCH</span>
+        <span class="title-sub">ASTEROID DASHBOARD</span>
+      </div>
+    </div>
+    <div id="header-right">
+      <div id="api-status" title="API Status">
+        <span id="api-dot" class="status-dot"></span>
+        <span id="api-label">CONNECTING</span>
+      </div>
+      <div id="utc-clock" aria-live="polite" aria-label="Current UTC time"></div>
+      <button id="unit-toggle" aria-label="Toggle units between km and miles">KM</button>
+      <button id="theme-toggle" aria-label="Toggle light/dark theme">☀</button>
+      <button id="favorites-btn" aria-label="Open favorites drawer">
+        ★ <span id="fav-badge" hidden>0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- TAB BAR -->
+  <nav id="tab-bar" role="tablist" aria-label="Dashboard sections">
+    <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="tab-threat" id="tab-btn-threat" data-tab="threat">THREAT WINDOW</button>
+    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-catalog" id="tab-btn-catalog" data-tab="catalog">ASTEROID CATALOG</button>
+    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-detail" id="tab-btn-detail" data-tab="detail">OBJECT DETAIL</button>
+  </nav>
+
+  <!-- TAB PANELS -->
+  <main id="tab-content">
+
+    <!-- TAB 1: THREAT WINDOW -->
+    <section id="tab-threat" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-threat">
+      <div id="radar-wrap">
+        <svg id="radar-svg" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-label="Asteroid approach radar"></svg>
+        <div id="radar-legend">
+          <span><span class="legend-dot green"></span> Safe</span>
+          <span><span class="legend-dot red"></span> Hazardous</span>
+          <span class="legend-scale">Ring = 1 LD</span>
+        </div>
+        <div id="radar-tooltip" hidden></div>
+      </div>
+
+      <div id="threat-toolbar">
+        <div id="refresh-info">
+          <span id="last-updated"></span>
+          <span id="refresh-countdown"></span>
+        </div>
+        <div id="threat-controls">
+          <label class="sort-label">Sort:
+            <select id="threat-sort" aria-label="Sort asteroids">
+              <option value="time">Approach Time</option>
+              <option value="distance">Miss Distance</option>
+              <option value="velocity">Velocity</option>
+            </select>
+          </label>
+          <label class="toggle-label">
+            <input type="checkbox" id="hazard-filter" aria-label="Show hazardous only" />
+            Hazardous only
+          </label>
+        </div>
+      </div>
+
+      <div id="summary-bar">
+        <div class="stat-card" id="stat-total"><div class="stat-val">—</div><div class="stat-lbl">TOTAL OBJECTS</div></div>
+        <div class="stat-card" id="stat-hazardous"><div class="stat-val">—</div><div class="stat-lbl">POTENTIALLY HAZARDOUS</div></div>
+        <div class="stat-card" id="stat-closest"><div class="stat-val">—</div><div class="stat-lbl">CLOSEST APPROACH</div></div>
+        <div class="stat-card" id="stat-fastest"><div class="stat-val">—</div><div class="stat-lbl">FASTEST OBJECT</div></div>
+      </div>
+
+      <div id="threat-timeline"></div>
+    </section>
+
+    <!-- TAB 2: ASTEROID CATALOG -->
+    <section id="tab-catalog" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-catalog">
+      <div id="catalog-search-bar">
+        <input type="search" id="catalog-search" placeholder="Search by name or ID (e.g. 2021 QM1)" aria-label="Search asteroids" />
+      </div>
+      <div id="catalog-filter-bar">
+        <label class="sort-label">Sort:
+          <select id="catalog-sort" aria-label="Sort catalog">
+            <option value="name">Name</option>
+            <option value="diameter">Diameter</option>
+            <option value="hazardous">Hazardous First</option>
+            <option value="observations">Observations</option>
+          </select>
+        </label>
+        <label class="toggle-label">
+          <input type="checkbox" id="catalog-hazard-filter" aria-label="Hazardous only" />
+          Hazardous only
+        </label>
+      </div>
+      <div id="catalog-table-wrap">
+        <table id="catalog-table" aria-label="Asteroid catalog">
+          <thead>
+            <tr>
+              <th>Designation</th>
+              <th>NASA JPL</th>
+              <th>Hazardous</th>
+              <th>Est. Diameter (m)</th>
+              <th>Approach History</th>
+              <th>First Observed</th>
+              <th>Last Observed</th>
+              <th>Observations</th>
+              <th>Compare</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="catalog-tbody"></tbody>
+        </table>
+      </div>
+      <div id="catalog-pagination">
+        <button id="catalog-prev" aria-label="Previous page">← PREV</button>
+        <span id="catalog-page-info">Page — of —</span>
+        <button id="catalog-next" aria-label="Next page">NEXT →</button>
+      </div>
+      <div id="compare-sticky" hidden>
+        <button id="compare-btn">COMPARE SELECTED (0/2)</button>
+      </div>
+      <div id="compare-panel" hidden></div>
+    </section>
+
+    <!-- TAB 3: OBJECT DETAIL -->
+    <section id="tab-detail" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-btn-detail">
+      <div id="detail-search-bar">
+        <input type="text" id="detail-id-input" placeholder="Enter Asteroid ID" aria-label="Asteroid ID" />
+        <button id="detail-id-submit">LOAD</button>
+      </div>
+      <div id="detail-content">
+        <div id="detail-empty">No asteroid loaded. Search by ID or click Inspect from another tab.</div>
+        <div id="detail-main" hidden>
+          <div id="detail-top">
+            <div id="detail-identity">
+              <h2 id="detail-name"></h2>
+              <div id="detail-badges"></div>
+              <a id="detail-jpl-link" href="#" target="_blank" rel="noopener">View on NASA JPL →</a>
+              <div id="detail-meta"></div>
+            </div>
+            <div id="detail-size-viz">
+              <svg id="size-svg" viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg" aria-label="Size comparison"></svg>
+              <div id="size-label"></div>
+            </div>
+          </div>
+
+          <div id="orbital-diagram-wrap">
+            <h3>ORBITAL PATH</h3>
+            <div id="orbital-controls">
+              <label class="toggle-label"><input type="checkbox" id="show-planets" checked /> Show inner planets</label>
+            </div>
+            <svg id="orbital-svg" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" aria-label="Orbital diagram"></svg>
+          </div>
+
+          <div id="approach-timeline-wrap">
+            <h3>CLOSE APPROACH HISTORY</h3>
+            <div id="approach-scrubber-wrap">
+              <input type="range" id="approach-scrubber" min="0" max="0" value="0" role="slider" aria-label="Approach timeline scrubber" />
+              <div id="approach-scrubber-info"></div>
+            </div>
+            <div id="approach-bar-chart"></div>
+            <button id="jump-next-approach">JUMP TO NEXT FUTURE APPROACH</button>
+          </div>
+
+          <div id="similar-asteroids-wrap">
+            <h3 id="similar-title">OTHER ASTEROIDS</h3>
+            <div id="similar-list"></div>
+          </div>
+
+          <div id="orbital-data-panel">
+            <h3>ORBITAL DATA</h3>
+            <div id="orbital-readout"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- FAVORITES DRAWER -->
+<div id="fav-drawer" hidden aria-label="Favorites drawer" role="dialog">
+  <div id="fav-drawer-header">
+    <span>FAVORITES</span>
+    <button id="fav-drawer-close" aria-label="Close favorites">✕</button>
+  </div>
+  <div id="fav-list"></div>
+  <div id="fav-footer">
+    <button id="fav-clear">Clear all favorites</button>
+  </div>
+</div>
+<div id="fav-overlay" hidden></div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script src="tab1.js"></script>
+<script src="tab2.js"></script>
+<script src="tab3.js"></script>
+</body>
+</html>
