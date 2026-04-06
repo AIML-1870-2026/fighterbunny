@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Drug Safety Explorer</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <h1 class="app-name">Drug Safety Explorer</h1>
+        <p class="app-tagline">Explore drug safety, simplified.</p>
+      </div>
+
+      <nav class="tab-nav" role="tablist">
+        <a href="#facts" class="tab-link active" role="tab" aria-selected="true" id="tab-facts">Drug Facts</a>
+        <a href="#compare" class="tab-link" role="tab" aria-selected="false" id="tab-compare">Drug Comparison</a>
+      </nav>
+
+      <div class="search-wrapper">
+        <div class="search-bar-container">
+          <input
+            type="search"
+            id="global-search"
+            class="global-search"
+            placeholder="Search brand or generic name…"
+            autocomplete="off"
+            aria-label="Search for a drug"
+            aria-autocomplete="list"
+            aria-controls="search-suggestions"
+          />
+          <button class="search-btn" aria-label="Search">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+          <ul id="search-suggestions" class="search-suggestions" role="listbox" hidden></ul>
+        </div>
+
+        <div id="search-history-panel" class="search-history-panel" hidden>
+          <div class="history-chips" id="history-chips"></div>
+          <button class="clear-history-btn" id="clear-history-btn">Clear history</button>
+        </div>
+      </div>
+
+      <p class="header-disclaimer">For informational purposes only. Always consult a healthcare professional.</p>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+
+    <!-- TAB 1: DRUG FACTS -->
+    <section id="facts" class="tab-panel active" role="tabpanel" aria-labelledby="tab-facts">
+      <div class="empty-state" id="facts-empty">
+        <div class="empty-icon">💊</div>
+        <h2>Search for a drug to get started</h2>
+        <p>Enter a brand name (e.g., Tylenol) or generic name (e.g., acetaminophen) above.</p>
+      </div>
+
+      <div id="drug-card" class="drug-card" hidden>
+
+        <!-- Drug Card Header -->
+        <div class="drug-card-header">
+          <div class="drug-identity">
+            <div class="drug-name-row">
+              <h2 id="dc-brand-name" class="dc-brand-name"></h2>
+              <span id="dc-recall-badge" class="recall-badge" hidden>
+                <span aria-hidden="true">⚠️</span> Recently Recalled
+              </span>
+            </div>
+            <p id="dc-generic-name" class="dc-generic-name"></p>
+            <span id="dc-drug-class" class="dc-drug-class-tag"></span>
+          </div>
+
+          <!-- Severity Score Panel -->
+          <div class="severity-panel">
+            <div class="severity-badge-wrapper">
+              <div id="severity-pulse" class="pulse-ring"></div>
+              <div id="severity-badge" class="severity-badge" aria-label="Severity level">
+                <span id="severity-icon" class="severity-icon"></span>
+                <span id="severity-label" class="severity-label"></span>
+              </div>
+            </div>
+            <p id="severity-description" class="severity-description"></p>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="drug-actions">
+          <button id="share-drug-btn" class="action-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Share this drug
+          </button>
+          <button id="print-btn" class="action-btn" onclick="window.print()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Print summary
+          </button>
+        </div>
+
+        <!-- Accordions -->
+        <div class="accordions" id="drug-accordions">
+
+          <!-- Side Effects -->
+          <details class="accordion" id="accordion-side-effects">
+            <summary class="accordion-summary">
+              <span class="accordion-title">
+                <span aria-hidden="true">⚡</span> Top Side Effects
+              </span>
+              <span class="accordion-chevron" aria-hidden="true">›</span>
+            </summary>
+            <div class="accordion-body">
+              <div id="side-effects-content" class="side-effects-grid"></div>
+              <button id="toggle-raw-effects" class="toggle-raw-btn">Show raw FDA terms</button>
+            </div>
+          </details>
+
+          <!-- Dosage & Label -->
+          <details class="accordion" id="accordion-dosage">
+            <summary class="accordion-summary">
+              <span class="accordion-title">
+                <span aria-hidden="true">📋</span> Dosage &amp; Label Info
+              </span>
+              <span class="accordion-chevron" aria-hidden="true">›</span>
+            </summary>
+            <div class="accordion-body" id="dosage-content">
+              <div class="loading-inline">Loading…</div>
+            </div>
+          </details>
+
+          <!-- Special Populations -->
+          <details class="accordion" id="accordion-populations">
+            <summary class="accordion-summary">
+              <span class="accordion-title">
+                <span aria-hidden="true">👥</span> Special Population Warnings
+              </span>
+              <span class="accordion-chevron" aria-hidden="true">›</span>
+            </summary>
+            <div class="accordion-body" id="populations-content"></div>
+          </details>
+
+          <!-- Recall History -->
+          <details class="accordion" id="accordion-recalls">
+            <summary class="accordion-summary">
+              <span class="accordion-title">
+                <span aria-hidden="true">🔔</span> Recall History
+              </span>
+              <span class="accordion-chevron" aria-hidden="true">›</span>
+            </summary>
+            <div class="accordion-body" id="recalls-content">
+              <div class="loading-inline">Loading…</div>
+            </div>
+          </details>
+
+          <!-- Pill Identifier -->
+          <details class="accordion" id="accordion-pill">
+            <summary class="accordion-summary">
+              <span class="accordion-title">
+                <span aria-hidden="true">🔍</span> Pill Identifier
+              </span>
+              <span class="accordion-chevron" aria-hidden="true">›</span>
+            </summary>
+            <div class="accordion-body">
+              <div class="pill-search-form">
+                <input type="text" id="pill-color" placeholder="Color (e.g., white)" class="pill-input" />
+                <input type="text" id="pill-shape" placeholder="Shape (e.g., round)" class="pill-input" />
+                <input type="text" id="pill-imprint" placeholder="Imprint/Code" class="pill-input" />
+                <button id="pill-search-btn" class="pill-search-btn">Search Pills</button>
+              </div>
+              <div id="pill-results" class="pill-results"></div>
+            </div>
+          </details>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: DRUG COMPARISON -->
+    <section id="compare" class="tab-panel" role="tabpanel" aria-labelledby="tab-compare">
+
+      <div class="compare-setup">
+        <h2 class="compare-heading">Compare Drugs</h2>
+        <p class="compare-subheading">Add 2–4 drugs to compare side by side and check for dangerous interactions.</p>
+
+        <div class="compare-slots" id="compare-slots">
+          <div class="compare-slot" data-slot="0">
+            <label class="slot-label">Drug 1</label>
+            <div class="slot-search-wrapper">
+              <input type="text" class="slot-search" placeholder="Search drug…" autocomplete="off" />
+              <ul class="slot-suggestions" hidden></ul>
+            </div>
+            <div class="slot-selected" hidden></div>
+          </div>
+          <div class="compare-slot" data-slot="1">
+            <label class="slot-label">Drug 2</label>
+            <div class="slot-search-wrapper">
+              <input type="text" class="slot-search" placeholder="Search drug…" autocomplete="off" />
+              <ul class="slot-suggestions" hidden></ul>
+            </div>
+            <div class="slot-selected" hidden></div>
+          </div>
+          <div class="compare-slot" data-slot="2">
+            <label class="slot-label">Drug 3 <span class="optional">(optional)</span></label>
+            <div class="slot-search-wrapper">
+              <input type="text" class="slot-search" placeholder="Search drug…" autocomplete="off" />
+              <ul class="slot-suggestions" hidden></ul>
+            </div>
+            <div class="slot-selected" hidden></div>
+          </div>
+          <div class="compare-slot" data-slot="3">
+            <label class="slot-label">Drug 4 <span class="optional">(optional)</span></label>
+            <div class="slot-search-wrapper">
+              <input type="text" class="slot-search" placeholder="Search drug…" autocomplete="off" />
+              <ul class="slot-suggestions" hidden></ul>
+            </div>
+            <div class="slot-selected" hidden></div>
+          </div>
+        </div>
+
+        <div class="compare-actions">
+          <button id="compare-btn" class="compare-btn" disabled>
+            Compare
+            <span id="compare-count-label"></span>
+          </button>
+          <button id="share-compare-btn" class="action-btn" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Share comparison
+          </button>
+        </div>
+      </div>
+
+      <!-- Comparison Results -->
+      <div id="comparison-results" class="comparison-results" hidden>
+        <div id="interaction-check-banner" class="interaction-check-banner" hidden></div>
+        <div id="comparison-table" class="comparison-table"></div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <p>Data sourced from the U.S. FDA OpenFDA API. This tool is for informational purposes only and does not constitute medical advice. Always consult a licensed healthcare professional before making any medical decisions.</p>
+    <p class="footer-privacy">No user data is transmitted to any server except the Anthropic API for summarization, which receives only anonymized FDA text — never personal information.</p>
+  </footer>
+
+  <!-- TOOLTIP -->
+  <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
