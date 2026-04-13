@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Review Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="header-brand">
+        <span class="brand-dot"></span>
+        <span class="brand-name">Review Generator</span>
+      </div>
+      <span class="header-sub">Powered by OpenAI</span>
+    </div>
+  </header>
+
+  <main class="main-content">
+
+    <!-- Section 0: API Key -->
+    <section class="section-card" id="section-apikey">
+      <div class="section-label">
+        <span class="section-num">00</span>
+        <span class="section-title">API Key</span>
+      </div>
+
+      <div class="key-input-row">
+        <input type="password" id="api-key-input" placeholder="sk-proj-… paste your OpenAI key" autocomplete="off" spellcheck="false">
+        <span id="key-status" class="key-status"></span>
+      </div>
+
+      <div class="key-actions">
+        <label class="upload-btn" for="env-file-input">Upload .env file</label>
+        <input type="file" id="env-file-input" accept=".env,.txt" style="display:none">
+        <button id="clear-key-btn" class="clear-key-btn">Clear</button>
+      </div>
+
+      <p class="key-notice">Your key is held in memory only — never stored or sent anywhere except directly to OpenAI.</p>
+    </section>
+
+    <!-- Section 1: Product Information -->
+    <section class="section-card" id="section-product">
+      <div class="section-label">
+        <span class="section-num">01</span>
+        <span class="section-title">Product Information</span>
+      </div>
+
+      <div class="form-grid">
+        <div class="field-group full-width">
+          <label for="product-name">Product Name <span class="req">*</span></label>
+          <input type="text" id="product-name" placeholder="e.g. Sony WH-1000XM5" autocomplete="off">
+        </div>
+
+        <div class="field-group">
+          <label for="category">Category</label>
+          <select id="category">
+            <option value="Electronics">Electronics</option>
+            <option value="Apparel">Apparel</option>
+            <option value="Home & Garden">Home & Garden</option>
+            <option value="Sports & Outdoors">Sports & Outdoors</option>
+            <option value="Beauty & Personal Care">Beauty & Personal Care</option>
+            <option value="Books & Media">Books & Media</option>
+            <option value="Toys & Games">Toys & Games</option>
+            <option value="Food & Grocery">Food & Grocery</option>
+            <option value="Automotive">Automotive</option>
+            <option value="Software">Software</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label for="style">Writing Style</label>
+          <select id="style">
+            <option value="Casual">Casual</option>
+            <option value="Professional">Professional</option>
+            <option value="Enthusiastic">Enthusiastic</option>
+            <option value="Sarcastic">Sarcastic</option>
+            <option value="Technical">Technical</option>
+            <option value="Conversational">Conversational</option>
+          </select>
+        </div>
+
+        <div class="field-group full-width">
+          <label>Review Length</label>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="length" value="short">
+              <span class="radio-pill">Short <em>~100 words</em></span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="length" value="medium" checked>
+              <span class="radio-pill">Medium <em>~250 words</em></span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="length" value="long">
+              <span class="radio-pill">Long <em>~500 words</em></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="field-group full-width">
+          <label for="comments">Additional Comments <span class="opt">optional</span></label>
+          <textarea id="comments" rows="3" placeholder="Extra context, reviewer persona, specific things to mention…"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Model & Sentiment -->
+    <section class="section-card" id="section-model">
+      <div class="section-label">
+        <span class="section-num">02</span>
+        <span class="section-title">Model & Sentiment</span>
+      </div>
+
+      <div class="model-row">
+        <div class="field-group">
+          <label for="model-family">LLM Family</label>
+          <select id="model-family">
+            <option value="gpt4o">GPT-4o</option>
+            <option value="gpt4turbo">GPT-4 Turbo</option>
+            <option value="gpt35">GPT-3.5</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label for="model-select">Model</label>
+          <select id="model-select">
+            <option value="gpt-4o">gpt-4o</option>
+            <option value="gpt-4o-mini">gpt-4o-mini</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="sliders-block">
+        <div class="sliders-heading">Sentiment Sliders</div>
+        <div class="slider-row">
+          <div class="slider-aspect-label">Overall</div>
+          <div class="slider-track-wrap">
+            <input type="range" id="sentiment-overall" class="sentiment-slider" min="-2" max="2" step="1" value="0">
+          </div>
+          <div class="slider-value-label" id="label-overall">Neutral</div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-aspect-label">Price / Value</div>
+          <div class="slider-track-wrap">
+            <input type="range" id="sentiment-price" class="sentiment-slider" min="-2" max="2" step="1" value="0">
+          </div>
+          <div class="slider-value-label" id="label-price">Neutral</div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-aspect-label">Features</div>
+          <div class="slider-track-wrap">
+            <input type="range" id="sentiment-features" class="sentiment-slider" min="-2" max="2" step="1" value="0">
+          </div>
+          <div class="slider-value-label" id="label-features">Neutral</div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-aspect-label">Usability</div>
+          <div class="slider-track-wrap">
+            <input type="range" id="sentiment-usability" class="sentiment-slider" min="-2" max="2" step="1" value="0">
+          </div>
+          <div class="slider-value-label" id="label-usability">Neutral</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: Output -->
+    <section class="section-card" id="section-output">
+      <div class="section-label">
+        <span class="section-num">03</span>
+        <span class="section-title">Generated Review</span>
+      </div>
+
+      <div class="generate-row">
+        <button id="generate-btn" class="generate-btn">Generate Review</button>
+        <button id="copy-btn" class="copy-btn hidden">Copy to Clipboard</button>
+      </div>
+
+      <div id="output-area" class="output-area">
+        <p class="output-placeholder">Your review will appear here once generated.</p>
+      </div>
+
+      <div id="loading-bar" class="loading-bar hidden">
+        <div class="loading-fill"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
