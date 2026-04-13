@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM Switchboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app" class="app mode-freetext">
+
+    <!-- Library Panel -->
+    <aside id="library-panel" class="library-panel collapsed">
+      <div class="library-header">
+        <button id="library-toggle-btn" class="library-toggle-btn" title="Toggle Library">
+          <span class="library-icon">📚</span>
+          <span class="library-label">My Library</span>
+          <span id="library-count" class="library-count">0</span>
+          <span class="chevron">›</span>
+        </button>
+        <div class="library-header-actions">
+          <button id="library-shortcuts-btn" class="icon-btn" title="Keyboard shortcuts">?</button>
+          <button id="library-select-btn" class="icon-btn" title="Select entries">☑</button>
+        </div>
+      </div>
+      <div class="library-body">
+        <div class="library-search-row">
+          <input type="text" id="library-search" placeholder="Search prompts and schemas…" autocomplete="off">
+        </div>
+        <div class="library-type-tabs">
+          <button class="type-tab active" data-type="all">All</button>
+          <button class="type-tab" data-type="prompt">Prompts</button>
+          <button class="type-tab" data-type="schema">Schemas</button>
+        </div>
+        <div id="library-tags" class="library-tag-chips"></div>
+        <div class="library-sort-row">
+          <select id="library-sort" title="Sort order">
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="lastused">Last used</option>
+            <option value="az">A–Z</option>
+          </select>
+        </div>
+        <div id="library-list" class="library-list">
+          <!-- Entries rendered here -->
+        </div>
+        <div id="bulk-action-bar" class="bulk-action-bar hidden">
+          <button id="bulk-tag-btn" class="secondary-btn small-btn">Tag selected</button>
+          <button id="bulk-delete-btn" class="danger-btn small-btn">Delete selected</button>
+          <button id="bulk-cancel-btn" class="secondary-btn small-btn">Cancel</button>
+        </div>
+        <div class="library-footer">
+          <button id="export-btn" class="secondary-btn small-btn">Export Library</button>
+          <label class="secondary-btn small-btn" for="import-input" style="cursor:pointer">Import Library</label>
+          <input type="file" id="import-input" accept=".json" style="display:none">
+          <button id="clear-all-btn" class="danger-btn small-btn">Clear All</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main id="workspace" class="workspace">
+
+      <!-- API Key Section -->
+      <section class="card api-key-section">
+        <h2>API Key</h2>
+        <div class="key-input-row">
+          <input type="password" id="api-key-input" placeholder="Paste your Anthropic API key…" autocomplete="off" spellcheck="false">
+          <button id="clear-key-btn" class="secondary-btn">Clear Key</button>
+          <label class="secondary-btn" for="key-file-input" style="cursor:pointer">Upload File</label>
+          <input type="file" id="key-file-input" accept=".txt,.env" style="display:none">
+        </div>
+        <div id="key-error" class="key-error hidden">
+          <span>That key doesn't seem to be valid. Double-check for extra spaces or missing characters.</span>
+          <button id="try-again-btn" class="link-btn">Try Again</button>
+        </div>
+        <p class="privacy-notice">
+          <strong>Your keys stay on your device.</strong>
+          This app runs entirely in your browser. Your API key is held in memory only while the tab is open
+          and is never sent anywhere except directly to the provider's API. It is never logged, stored, or
+          transmitted to any third party. Closing or refreshing the tab permanently clears it.
+        </p>
+      </section>
+
+      <!-- Model Selection -->
+      <section class="card model-section">
+        <div class="model-row">
+          <label for="model-select">Model</label>
+          <div class="model-select-wrapper">
+            <select id="model-select" disabled>
+              <option value="">— Enter an API key first —</option>
+            </select>
+            <span id="model-spinner" class="model-spinner hidden">⏳ Discovering models…</span>
+          </div>
+          <span id="model-warning" class="model-warning hidden">⚠ Could not fetch live model list — showing defaults.</span>
+        </div>
+        <details class="cors-info-box">
+          <summary>ℹ️ Why can't I fetch models automatically sometimes?</summary>
+          <div class="cors-info-body">
+            <p>Browsers enforce a security rule called <strong>CORS</strong> (Cross-Origin Resource Sharing)
+            that controls which websites can talk to which APIs. Anthropic's API is designed to be called
+            from servers, not directly from browser tabs — so depending on your setup, the model discovery
+            call may be blocked.</p>
+            <p><strong>This is normal and expected.</strong> If discovery fails, the app quietly falls back
+            to a built-in model list. Your prompts will still work fine — CORS only affects the model list
+            fetch, not the completions endpoint.</p>
+            <p>If you're running this locally via a dev server or proxy, discovery will likely work. If
+            you're opening the HTML file directly, it may not — and that's okay.</p>
+          </div>
+        </details>
+      </section>
+
+      <!-- Mode Toggle -->
+      <div class="mode-toggle-row">
+        <span class="mode-label" id="mode-left">Free Text</span>
+        <label class="toggle-switch" for="mode-toggle" title="Toggle output mode">
+          <input type="checkbox" id="mode-toggle">
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="mode-label" id="mode-right">Structured JSON</span>
+      </div>
+
+      <!-- Loaded entry banner -->
+      <div id="loaded-banner" class="loaded-banner hidden"></div>
+
+      <!-- Prompt Section -->
+      <section class="card prompt-section" id="prompt-section">
+        <div class="field-group">
+          <label for="system-prompt">System Prompt <span class="label-opt">(optional)</span></label>
+          <textarea id="system-prompt" rows="2" placeholder="You are a helpful assistant…"></textarea>
+        </div>
+
+        <!-- Structured mode schema area -->
+        <div id="schema-area" class="schema-area hidden">
+          <div class="schema-controls">
+            <label for="schema-select">Schema Template</label>
+            <select id="schema-select">
+              <option value="">— Select a template —</option>
+              <option value="science_concept">Science Concept Breakdown</option>
+              <option value="track_analysis">Song / Track Analysis</option>
+              <option value="game_design_mini">Game Design Document (Mini)</option>
+              <option value="math_solution">Math Problem Solver</option>
+              <option value="npc_sheet">Character / NPC Sheet</option>
+              <option value="custom">Custom</option>
+            </select>
+            <button id="save-schema-btn" class="secondary-btn small-btn">Save Schema</button>
+          </div>
+          <div class="field-group">
+            <label for="schema-input">JSON Schema</label>
+            <textarea id="schema-input" rows="7" placeholder="Paste or edit your JSON schema here…"></textarea>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label for="user-prompt">Your Prompt</label>
+          <textarea id="user-prompt" rows="5" placeholder="Type your prompt here… (Ctrl+Enter to send)"></textarea>
+        </div>
+
+        <div class="prompt-actions">
+          <button id="send-btn" class="primary-btn">Send</button>
+          <button id="save-prompt-btn" class="secondary-btn">Save Prompt</button>
+          <button id="save-pair-btn" class="secondary-btn hidden">Save Prompt + Schema</button>
+        </div>
+
+        <div id="progress-bar" class="progress-bar hidden">
+          <div class="progress-fill"></div>
+        </div>
+      </section>
+
+      <!-- Output Section -->
+      <section class="card output-section" id="output-section">
+        <div class="output-header">
+          <h3>Response</h3>
+          <div class="output-actions">
+            <button id="copy-btn" class="secondary-btn hidden">Copy</button>
+            <button id="switch-to-free-btn" class="secondary-btn hidden">Switch to Free Text</button>
+          </div>
+        </div>
+        <div id="output-area" class="output-area">
+          <p class="output-placeholder">Your response will appear here.</p>
+        </div>
+        <div id="json-fallback" class="json-fallback hidden">
+          <p class="json-fallback-msg">The model didn't return valid JSON this time. The raw response is shown below. Try adding "Respond only in JSON." to your prompt, or use a simpler schema.</p>
+          <pre id="json-fallback-raw"></pre>
+        </div>
+      </section>
+
+      <!-- Example Prompts -->
+      <section class="card examples-section">
+        <h3>Example Prompts</h3>
+        <div class="example-categories">
+          <div class="example-category">
+            <h4>🔬 Science &amp; Math</h4>
+            <div id="examples-science" class="example-chips"></div>
+          </div>
+          <div class="example-category">
+            <h4>🎵 Music</h4>
+            <div id="examples-music" class="example-chips"></div>
+          </div>
+          <div class="example-category">
+            <h4>🎮 Gaming</h4>
+            <div id="examples-gaming" class="example-chips"></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Save / Edit Dialog -->
+  <div id="save-dialog" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="save-dialog-title">
+    <div class="modal">
+      <h3 id="save-dialog-title">Save to Library</h3>
+      <div class="field-group">
+        <label for="save-title">Title <span class="label-req">*</span></label>
+        <input type="text" id="save-title" maxlength="60" placeholder="My prompt title…">
+      </div>
+      <div class="field-group">
+        <label for="save-description">Description <span class="label-opt">(optional, max 120 chars)</span></label>
+        <textarea id="save-description" rows="2" maxlength="120" placeholder="Brief description…"></textarea>
+      </div>
+      <div class="field-group">
+        <label>Tags <span class="label-opt">(optional)</span></label>
+        <div id="save-tags-container" class="tags-input-container">
+          <div id="save-tags-chips" class="tags-chips-inline"></div>
+          <input type="text" id="save-tags-input" placeholder="Type tag, press Enter or comma…">
+        </div>
+      </div>
+      <div class="field-group" id="include-system-row">
+        <label class="checkbox-label">
+          <input type="checkbox" id="save-include-system" checked>
+          Include system prompt
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button id="save-confirm-btn" class="primary-btn">Save</button>
+        <button id="save-as-new-btn" class="secondary-btn hidden">Save as New</button>
+        <button id="save-cancel-btn" class="secondary-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Keyboard Shortcuts Dialog -->
+  <div id="shortcuts-dialog" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal">
+      <h3>Keyboard Shortcuts</h3>
+      <table class="shortcuts-table">
+        <tr><td><kbd>Ctrl/Cmd + Shift + L</kbd></td><td>Toggle Library panel</td></tr>
+        <tr><td><kbd>Ctrl/Cmd + S</kbd></td><td>Save current prompt to library</td></tr>
+        <tr><td><kbd>Ctrl/Cmd + Enter</kbd></td><td>Send prompt</td></tr>
+        <tr><td><kbd>Escape</kbd></td><td>Close dialog / deselect all</td></tr>
+        <tr><td><kbd>↑ / ↓</kbd></td><td>Navigate library cards</td></tr>
+        <tr><td><kbd>Enter</kbd></td><td>Load focused library entry</td></tr>
+      </table>
+      <div class="modal-actions">
+        <button id="shortcuts-close-btn" class="primary-btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
