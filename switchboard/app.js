@@ -4,11 +4,10 @@
    CONSTANTS
    ============================================================= */
 
-const FALLBACK_MODELS = [
-  'claude-opus-4-5',
-  'claude-sonnet-4-5',
-  'claude-haiku-4-5-20251001'
-];
+const FALLBACK_MODELS = {
+  anthropic: ['claude-opus-4-5', 'claude-sonnet-4-5', 'claude-haiku-4-5-20251001'],
+  openai:    ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo']
+};
 
 const SCHEMA_TEMPLATES = {
   science_concept: {
@@ -59,7 +58,9 @@ const EXAMPLE_PROMPTS = {
    ============================================================= */
 
 const state = {
-  apiKey: null,
+  anthropicKey: null,
+  openaiKey: null,
+  provider: 'anthropic', // 'anthropic' | 'openai'
   mode: 'freetext',
   models: [],
   selectedModel: '',
@@ -112,13 +113,23 @@ document.addEventListener('DOMContentLoaded', () => {
    API KEY
    ============================================================= */
 
-function handleKeyInput(key) {
+function getActiveKey() {
+  return state.provider === 'anthropic' ? state.anthropicKey : state.openaiKey;
+}
+
+function handleKeyPaste(provider, key) {
   key = (key || '').trim();
   if (!key) return;
-  state.apiKey = key;
+  if (provider === 'anthropic') {
+    state.anthropicKey = key;
+    setKeyStatus('anthropic', 'set');
+  } else {
+    state.openaiKey = key;
+    setKeyStatus('openai', 'set');
+  }
   hideKeyError();
-  $('api-key-input').style.borderColor = 'var(--success)';
-  fetchModels(key);
+  // Fetch models if this is the active provider
+  if (provider === state.provider) fetchModels();
 }
 
 function handleKeyFile(file) {
@@ -126,36 +137,68 @@ function handleKeyFile(file) {
   const reader = new FileReader();
   reader.onload = e => {
     const text = e.target.result;
-    // Support: KEY=value, KEY="value", KEY='value'
-    const match = text.match(/ANTHROPIC_API_KEY\s*=\s*["']?([^"'\s\n\r]+)["']?/) || text.match(/(sk-ant-[^"'\s\n\r]+)/);
-    const key = match ? match[1].trim() : text.trim();
-    if (key) {
-      $('api-key-input').value = key;
-      handleKeyInput(key);
+    // Support KEY=value, KEY="value", KEY='value' (both providers)
+    const extractVal = regex => {
+      const m = text.match(regex);
+      return m ? m[1].replace(/^["']|["']$/g, '').trim() : null;
+    };
+
+    const anthropicKey = extractVal(/ANTHROPIC_API_KEY\s*=\s*["']?([^"'\s\n\r]+)["']?/)
+                      || extractVal(/(sk-ant-[^"'\s\n\r]+)/);
+    const openaiKey    = extractVal(/OPENAI_API_KEY\s*=\s*["']?([^"'\s\n\r]+)["']?/)
+                      || extractVal(/(sk-proj-[^"'\s\n\r]+)/);
+
+    let found = false;
+    if (anthropicKey) {
+      state.anthropicKey = anthropicKey;
+      $('anthropic-key-input').value = anthropicKey;
+      setKeyStatus('anthropic', 'set');
+      found = true;
+    }
+    if (openaiKey) {
+      state.openaiKey = openaiKey;
+      $('openai-key-input').value = openaiKey;
+      setKeyStatus('openai', 'set');
+      found = true;
+    }
+
+    if (!found) {
+      showKeyError("Couldn't find any API keys in that file. Check that it uses ANTHROPIC_API_KEY or OPENAI_API_KEY.");
     } else {
-      showKeyError("Couldn't find an API key in that file. Try pasting it directly.");
+      hideKeyError();
+      fetchModels();
     }
   };
   reader.readAsText(file);
 }
 
-function clearKey() {
-  state.apiKey = null;
-  state.models = [];
-  state.selectedModel = '';
-  $('api-key-input').value = '';
-  $('api-key-input').style.borderColor = '';
-  $('api-key-input').disabled = false;
+function clearKey(provider) {
+  if (provider === 'anthropic') {
+    state.anthropicKey = null;
+    $('anthropic-key-input').value = '';
+    setKeyStatus('anthropic', '');
+  } else {
+    state.openaiKey = null;
+    $('openai-key-input').value = '';
+    setKeyStatus('openai', '');
+  }
+  if (provider === state.provider) resetModelSelect();
   hideKeyError();
-  resetModelSelect();
+}
+
+function setKeyStatus(provider, status) {
+  const el = $(`${provider}-key-status`);
+  if (!el) return;
+  if (status === 'set')   { el.textContent = '✓'; el.className = 'key-status key-status-ok'; }
+  else if (status === 'error') { el.textContent = '✗'; el.className = 'key-status key-status-err'; }
+  else { el.textContent = ''; el.className = 'key-status'; }
 }
 
 function showKeyError(msg) {
   const el = $('key-error');
   el.querySelector('span').textContent = msg || "That key doesn't seem to be valid. Double-check for extra spaces or missing characters.";
-  el.classList.remove('valid');
   show(el);
-  $('api-key-input').style.borderColor = 'var(--danger)';
+  setKeyStatus(state.provider, 'error');
 }
 
 function hideKeyError() {
@@ -171,13 +214,34 @@ function resetModelSelect() {
 }
 
 /* =============================================================
+   PROVIDER SWITCHING
+   ============================================================= */
+
+function setProvider(provider) {
+  state.provider = provider;
+  document.querySelectorAll('.provider-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.provider === provider);
+  });
+  // Re-fetch models for the newly selected provider if we have a key
+  if (getActiveKey()) {
+    fetchModels();
+  } else {
+    resetModelSelect();
+  }
+}
+
+/* =============================================================
    MODEL DISCOVERY
    ============================================================= */
 
-async function fetchModels(key) {
+async function fetchModels() {
+  const key = getActiveKey();
+  if (!key) { resetModelSelect(); return; }
+
   const spinner = $('model-spinner');
   const sel = $('model-select');
   const warning = $('model-warning');
+  const fallback = FALLBACK_MODELS[state.provider];
 
   show(spinner);
   sel.disabled = true;
@@ -185,30 +249,50 @@ async function fetchModels(key) {
   hide(warning);
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/models', {
-      headers: {
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      }
-    });
+    let res;
+    if (state.provider === 'anthropic') {
+      res = await fetch('https://api.anthropic.com/v1/models', {
+        headers: {
+          'x-api-key': key,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        }
+      });
+    } else {
+      res = await fetch('https://api.openai.com/v1/models', {
+        headers: { 'Authorization': `Bearer ${key}` }
+      });
+    }
 
     if (res.status === 401) {
-      showKeyError();
+      showKeyError('That key was rejected by the API. Double-check it has no extra spaces or missing characters.');
+      setKeyStatus(state.provider, 'error');
       resetModelSelect();
       return;
     }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const data = await res.json();
-    const models = (data.data || []).map(m => m.id).sort((a, b) => b.localeCompare(a));
-    state.models = models.length ? models : FALLBACK_MODELS;
+    let models = (data.data || []).map(m => m.id);
+
+    // For OpenAI, filter to chat-capable models only
+    if (state.provider === 'openai') {
+      models = models
+        .filter(id => /^(gpt-|o1|o3|chatgpt-)/.test(id))
+        .sort((a, b) => b.localeCompare(a));
+    } else {
+      models = models.sort((a, b) => b.localeCompare(a));
+    }
+
+    state.models = models.length ? models : fallback;
     if (!models.length) show(warning);
     populateModelSelect(state.models);
+    setKeyStatus(state.provider, 'set');
   } catch {
-    state.models = FALLBACK_MODELS;
-    populateModelSelect(FALLBACK_MODELS);
+    state.models = fallback;
+    populateModelSelect(fallback);
     show(warning);
+    // Don't mark key as error — could be CORS, not a bad key
   } finally {
     hide(spinner);
   }
@@ -298,7 +382,8 @@ function autoFillSystemPrompt() {
    ============================================================= */
 
 async function sendPrompt() {
-  if (!state.apiKey) { showOutputMsg('Enter an API key first.'); return; }
+  const key = getActiveKey();
+  if (!key) { showOutputMsg(`Enter ${state.provider === 'anthropic' ? 'an Anthropic' : 'an OpenAI'} API key first.`); return; }
   if (!state.selectedModel) { showOutputMsg('Select a model first.'); return; }
 
   const userPrompt = $('user-prompt').value.trim();
@@ -308,12 +393,6 @@ async function sendPrompt() {
   if (state.retryCountdown) { clearInterval(state.retryCountdown); state.retryCountdown = null; }
 
   const systemPrompt = buildSystemPrompt();
-  const body = {
-    model: state.selectedModel,
-    max_tokens: 4096,
-    messages: [{ role: 'user', content: userPrompt }]
-  };
-  if (systemPrompt) body.system = systemPrompt;
 
   showProgress(true);
   $('output-area').innerHTML = '<p class="output-placeholder">Generating response…</p>';
@@ -326,23 +405,47 @@ async function sendPrompt() {
   const timeoutId = setTimeout(() => state.abortController?.abort('timeout'), 30000);
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': state.apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify(body),
-      signal: state.abortController.signal
-    });
+    let res;
+
+    if (state.provider === 'anthropic') {
+      const body = { model: state.selectedModel, max_tokens: 4096, messages: [{ role: 'user', content: userPrompt }] };
+      if (systemPrompt) body.system = systemPrompt;
+      res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': key,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify(body),
+        signal: state.abortController.signal
+      });
+    } else {
+      // OpenAI chat completions
+      const messages = [];
+      if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+      messages.push({ role: 'user', content: userPrompt });
+      const body = { model: state.selectedModel, max_tokens: 4096, messages };
+      res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${key}`,
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify(body),
+        signal: state.abortController.signal
+      });
+    }
 
     clearTimeout(timeoutId);
     if (!res.ok) { await handleAPIError(res); return; }
 
     const data = await res.json();
-    const text = data.content?.[0]?.text ?? '';
+    // Anthropic: data.content[0].text  |  OpenAI: data.choices[0].message.content
+    const text = state.provider === 'anthropic'
+      ? (data.content?.[0]?.text ?? '')
+      : (data.choices?.[0]?.message?.content ?? '');
 
     if (state.mode === 'structured') {
       renderStructuredOutput(text);
@@ -457,15 +560,23 @@ async function handleAPIError(res) {
   let body = {};
   try { body = await res.json(); } catch {}
 
+  // Normalize error message across providers
+  const errMsg = body.error?.message || body.message || `HTTP ${res.status}`;
+
   if (res.status === 401) {
-    showKeyError();
+    showKeyError('That key was rejected (401). Double-check it has no extra spaces or missing characters.');
+    setKeyStatus(state.provider, 'error');
     resetModelSelect();
+    const inputId = state.provider === 'anthropic' ? 'anthropic-key-input' : 'openai-key-input';
     setErrOutput(`
       <p>Invalid API key. Double-check for extra spaces or missing characters.</p>
       <div class="retry-row">
         <button class="secondary-btn" id="retry-btn">Re-enter Key</button>
       </div>`);
-    $('retry-btn')?.addEventListener('click', () => { clearKey(); $('api-key-input').focus(); });
+    $('retry-btn')?.addEventListener('click', () => {
+      clearKey(state.provider);
+      $(inputId)?.focus();
+    });
 
   } else if (res.status === 429) {
     const retryAfter = parseInt(res.headers.get('retry-after') || '0') || null;
@@ -479,9 +590,8 @@ async function handleAPIError(res) {
       </div>`);
 
   } else {
-    const msg = body.error?.message || `HTTP ${res.status}`;
     setErrOutput(`
-      <p>API error: ${escapeHTML(msg)}</p>
+      <p>API error: ${escapeHTML(errMsg)}</p>
       <div class="retry-row">
         <button class="secondary-btn" id="retry-btn">Retry</button>
       </div>`);
@@ -1105,12 +1215,26 @@ function exitSelectMode() {
    ============================================================= */
 
 function setupEventListeners() {
-  // API key
-  $('api-key-input').addEventListener('change', e => handleKeyInput(e.target.value));
-  $('api-key-input').addEventListener('paste', e => setTimeout(() => handleKeyInput(e.target.value), 10));
+  // API keys
+  const bindKeyInput = (id, provider) => {
+    $(id).addEventListener('change', e => handleKeyPaste(provider, e.target.value));
+    $(id).addEventListener('paste', e => setTimeout(() => handleKeyPaste(provider, e.target.value), 10));
+  };
+  bindKeyInput('anthropic-key-input', 'anthropic');
+  bindKeyInput('openai-key-input', 'openai');
+  $('clear-anthropic-btn').addEventListener('click', () => clearKey('anthropic'));
+  $('clear-openai-btn').addEventListener('click', () => clearKey('openai'));
   $('key-file-input').addEventListener('change', e => { handleKeyFile(e.target.files[0]); e.target.value = ''; });
-  $('clear-key-btn').addEventListener('click', clearKey);
-  $('try-again-btn').addEventListener('click', () => { clearKey(); $('api-key-input').focus(); });
+  $('try-again-btn').addEventListener('click', () => {
+    clearKey(state.provider);
+    const inputId = state.provider === 'anthropic' ? 'anthropic-key-input' : 'openai-key-input';
+    $(inputId)?.focus();
+  });
+
+  // Provider tabs
+  document.querySelectorAll('.provider-tab').forEach(btn => {
+    btn.addEventListener('click', () => setProvider(btn.dataset.provider));
+  });
 
   // Model
   $('model-select').addEventListener('change', e => { state.selectedModel = e.target.value; });

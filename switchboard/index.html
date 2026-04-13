@@ -63,27 +63,55 @@
 
       <!-- API Key Section -->
       <section class="card api-key-section">
-        <h2>API Key</h2>
-        <div class="key-input-row">
-          <input type="password" id="api-key-input" placeholder="Paste your Anthropic API key…" autocomplete="off" spellcheck="false">
-          <button id="clear-key-btn" class="secondary-btn">Clear Key</button>
-          <label class="secondary-btn" for="key-file-input" style="cursor:pointer">Upload File</label>
-          <input type="file" id="key-file-input" accept=".txt,.env" style="display:none">
+        <div class="key-section-header">
+          <h2>API Keys</h2>
+          <div class="key-file-row">
+            <label class="secondary-btn small-btn" for="key-file-input" style="cursor:pointer">📂 Upload .env file</label>
+            <input type="file" id="key-file-input" accept=".txt,.env" style="display:none">
+            <span class="hint-text">auto-fills both keys</span>
+          </div>
         </div>
+
+        <div class="key-grid">
+          <div class="key-field">
+            <label for="anthropic-key-input">Anthropic (Claude)</label>
+            <div class="key-input-row">
+              <input type="password" id="anthropic-key-input" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
+              <button id="clear-anthropic-btn" class="secondary-btn small-btn">Clear</button>
+              <span id="anthropic-key-status" class="key-status"></span>
+            </div>
+          </div>
+          <div class="key-field">
+            <label for="openai-key-input">OpenAI (GPT)</label>
+            <div class="key-input-row">
+              <input type="password" id="openai-key-input" placeholder="sk-proj-… or sk-…" autocomplete="off" spellcheck="false">
+              <button id="clear-openai-btn" class="secondary-btn small-btn">Clear</button>
+              <span id="openai-key-status" class="key-status"></span>
+            </div>
+          </div>
+        </div>
+
         <div id="key-error" class="key-error hidden">
-          <span>That key doesn't seem to be valid. Double-check for extra spaces or missing characters.</span>
+          <span></span>
           <button id="try-again-btn" class="link-btn">Try Again</button>
         </div>
         <p class="privacy-notice">
           <strong>Your keys stay on your device.</strong>
-          This app runs entirely in your browser. Your API key is held in memory only while the tab is open
-          and is never sent anywhere except directly to the provider's API. It is never logged, stored, or
-          transmitted to any third party. Closing or refreshing the tab permanently clears it.
+          This app runs entirely in your browser. Keys are held in memory only while the tab is open
+          and are never sent anywhere except directly to the provider's API. They are never logged,
+          stored, or transmitted to any third party. Closing or refreshing the tab permanently clears them.
         </p>
       </section>
 
       <!-- Model Selection -->
       <section class="card model-section">
+        <div class="provider-row">
+          <span class="provider-label">Provider</span>
+          <div class="provider-tabs">
+            <button class="provider-tab active" data-provider="anthropic">Anthropic</button>
+            <button class="provider-tab" data-provider="openai">OpenAI</button>
+          </div>
+        </div>
         <div class="model-row">
           <label for="model-select">Model</label>
           <div class="model-select-wrapper">
