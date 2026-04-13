@@ -126,7 +126,8 @@ function handleKeyFile(file) {
   const reader = new FileReader();
   reader.onload = e => {
     const text = e.target.result;
-    const match = text.match(/ANTHROPIC_API_KEY\s*=\s*([^\s\n\r]+)/) || text.match(/(sk-ant-[^\s\n\r]+)/);
+    // Support: KEY=value, KEY="value", KEY='value'
+    const match = text.match(/ANTHROPIC_API_KEY\s*=\s*["']?([^"'\s\n\r]+)["']?/) || text.match(/(sk-ant-[^"'\s\n\r]+)/);
     const key = match ? match[1].trim() : text.trim();
     if (key) {
       $('api-key-input').value = key;
