@@ -3,10 +3,10 @@
    ============================================================ */
 let storedApiKey = '';
 
-const apiKeyInput   = document.getElementById('api-key-input');
-const keyStatus     = document.getElementById('key-status');
-const envFileInput  = document.getElementById('env-file-input');
-const clearKeyBtn   = document.getElementById('clear-key-btn');
+const apiKeyInput  = document.getElementById('api-key-input');
+const keyStatus    = document.getElementById('key-status');
+const envFileInput = document.getElementById('env-file-input');
+const clearKeyBtn  = document.getElementById('clear-key-btn');
 
 function parseEnvFile(text) {
   for (const line of text.split('\n')) {
@@ -17,7 +17,6 @@ function parseEnvFile(text) {
     const key = trimmed.slice(0, eqIdx).trim();
     if (key === 'OPENAI_API_KEY') {
       let val = trimmed.slice(eqIdx + 1).trim();
-      // strip surrounding quotes
       if ((val.startsWith('"') && val.endsWith('"')) ||
           (val.startsWith("'") && val.endsWith("'"))) {
         val = val.slice(1, -1);
@@ -70,7 +69,7 @@ const MODEL_FAMILIES = {
   gpt4o: {
     label: 'GPT-4o',
     models: [
-      { value: 'gpt-4o', label: 'gpt-4o' },
+      { value: 'gpt-4o',      label: 'gpt-4o' },
       { value: 'gpt-4o-mini', label: 'gpt-4o-mini' },
     ],
   },
@@ -99,6 +98,9 @@ const SENTIMENT_MAP = {
    '2': { label: 'Very Positive', cls: 'very-pos', trackCls: 'val-very-pos' },
 };
 
+const SENTIMENT_WORDS = { '-2': 'very negative', '-1': 'negative', '0': 'neutral', '1': 'positive', '2': 'very positive' };
+const LENGTH_WORDS    = { short: '~100 words', medium: '~250 words', long: '~500 words' };
+
 const SENTIMENT_ALL_TRACK_CLASSES = Object.values(SENTIMENT_MAP).map(s => s.trackCls);
 const SENTIMENT_ALL_LABEL_CLASSES = Object.values(SENTIMENT_MAP).map(s => s.cls);
 
@@ -106,23 +108,23 @@ const SENTIMENT_ALL_LABEL_CLASSES = Object.values(SENTIMENT_MAP).map(s => s.cls)
    DOM References
    ============================================================ */
 const modelFamilySelect = document.getElementById('model-family');
-const modelSelect = document.getElementById('model-select');
-const generateBtn = document.getElementById('generate-btn');
-const copyBtn = document.getElementById('copy-btn');
-const outputArea = document.getElementById('output-area');
-const loadingBar = document.getElementById('loading-bar');
+const modelSelect       = document.getElementById('model-select');
+const generateBtn       = document.getElementById('generate-btn');
+const copyBtn           = document.getElementById('copy-btn');
+const outputArea        = document.getElementById('output-area');
+const loadingBar        = document.getElementById('loading-bar');
 
 const sliders = {
-  overall:  document.getElementById('sentiment-overall'),
-  price:    document.getElementById('sentiment-price'),
-  features: document.getElementById('sentiment-features'),
+  overall:   document.getElementById('sentiment-overall'),
+  price:     document.getElementById('sentiment-price'),
+  features:  document.getElementById('sentiment-features'),
   usability: document.getElementById('sentiment-usability'),
 };
 
 const sliderLabels = {
-  overall:  document.getElementById('label-overall'),
-  price:    document.getElementById('label-price'),
-  features: document.getElementById('label-features'),
+  overall:   document.getElementById('label-overall'),
+  price:     document.getElementById('label-price'),
+  features:  document.getElementById('label-features'),
   usability: document.getElementById('label-usability'),
 };
 
@@ -141,63 +143,80 @@ function populateModels(familyKey) {
   });
 }
 
-modelFamilySelect.addEventListener('change', () => {
-  populateModels(modelFamilySelect.value);
-});
-
-// Initialize on page load
+modelFamilySelect.addEventListener('change', () => populateModels(modelFamilySelect.value));
 populateModels(modelFamilySelect.value);
 
 /* ============================================================
-   Sentiment Slider Updates
+   Sentiment Sliders
    ============================================================ */
 function updateSlider(key) {
-  const slider = sliders[key];
+  const slider  = sliders[key];
   const labelEl = sliderLabels[key];
-  const val = String(slider.value);
-  const info = SENTIMENT_MAP[val];
+  const val     = String(slider.value);
+  const info    = SENTIMENT_MAP[val];
 
-  // Update label text and color class
   labelEl.textContent = info.label;
   SENTIMENT_ALL_LABEL_CLASSES.forEach(c => labelEl.classList.remove(c));
   labelEl.classList.add(info.cls);
 
-  // Update track fill class
   SENTIMENT_ALL_TRACK_CLASSES.forEach(c => slider.classList.remove(c));
   slider.classList.add(info.trackCls);
 }
 
 Object.keys(sliders).forEach(key => {
-  updateSlider(key); // initialize
+  updateSlider(key);
   sliders[key].addEventListener('input', () => updateSlider(key));
 });
 
 /* ============================================================
-   Generate Review
+   Prompt Builder (client-side)
+   ============================================================ */
+function buildPrompt({ productName, category, length, style, comments, sentimentAspects }) {
+  const wordCount = LENGTH_WORDS[length] || '~250 words';
+
+  const aspectMap = { overall: 'Overall', price: 'Price/Value', features: 'Features', usability: 'Usability' };
+  const aspectLines = [];
+  for (const [key, label] of Object.entries(aspectMap)) {
+    const val = sentimentAspects[key];
+    if (val !== 0) {
+      aspectLines.push(`- ${label}: ${SENTIMENT_WORDS[String(val)]}`);
+    }
+  }
+
+  let prompt = `Write a ${wordCount} product review for "${productName}" in the ${category} category.\n\n`;
+  prompt += `Style: ${style}\n`;
+  if (comments) prompt += `Additional comments from reviewer: ${comments}\n`;
+  if (aspectLines.length) {
+    prompt += `\nSentiment guidance (scale: -2 = very negative to +2 = very positive):\n`;
+    prompt += aspectLines.join('\n') + '\n';
+  }
+  prompt += '\nWrite only the review text. Do not include any labels, headers, or meta-commentary.';
+  return prompt;
+}
+
+/* ============================================================
+   Generate Review — calls OpenAI directly from the browser
    ============================================================ */
 function getFormValues() {
   const productName = document.getElementById('product-name').value.trim();
-  const category = document.getElementById('category').value;
-  const style = document.getElementById('style').value;
-  const comments = document.getElementById('comments').value.trim();
-  const model = modelSelect.value;
-  const lengthEl = document.querySelector('input[name="length"]:checked');
-  const length = lengthEl ? lengthEl.value : 'medium';
-
+  const category    = document.getElementById('category').value;
+  const style       = document.getElementById('style').value;
+  const comments    = document.getElementById('comments').value.trim();
+  const model       = modelSelect.value;
+  const lengthEl    = document.querySelector('input[name="length"]:checked');
+  const length      = lengthEl ? lengthEl.value : 'medium';
   const sentimentAspects = {
-    overall:  Number(sliders.overall.value),
-    price:    Number(sliders.price.value),
-    features: Number(sliders.features.value),
+    overall:   Number(sliders.overall.value),
+    price:     Number(sliders.price.value),
+    features:  Number(sliders.features.value),
     usability: Number(sliders.usability.value),
   };
-
   return { productName, category, length, style, comments, model, sentimentAspects };
 }
 
 function setLoadingState(isLoading) {
   generateBtn.disabled = isLoading;
   generateBtn.textContent = isLoading ? 'Generating…' : 'Generate Review';
-
   if (isLoading) {
     loadingBar.classList.remove('hidden');
     outputArea.classList.add('loading');
@@ -211,7 +230,7 @@ function setLoadingState(isLoading) {
 function showResult(text) {
   outputArea.textContent = text;
   outputArea.classList.remove('appeared');
-  void outputArea.offsetWidth; // trigger reflow for animation
+  void outputArea.offsetWidth;
   outputArea.classList.add('appeared');
   copyBtn.classList.remove('hidden');
 }
@@ -229,33 +248,48 @@ generateBtn.addEventListener('click', async () => {
   const values = getFormValues();
 
   if (!values.productName) {
-    document.getElementById('product-name').focus();
-    document.getElementById('product-name').style.borderColor = 'var(--danger)';
-    setTimeout(() => {
-      document.getElementById('product-name').style.borderColor = '';
-    }, 1800);
+    const input = document.getElementById('product-name');
+    input.focus();
+    input.style.borderColor = 'var(--danger)';
+    setTimeout(() => { input.style.borderColor = ''; }, 1800);
+    return;
+  }
+
+  if (!storedApiKey) {
+    apiKeyInput.focus();
+    apiKeyInput.style.borderColor = 'var(--danger)';
+    setTimeout(() => { apiKeyInput.style.borderColor = ''; }, 1800);
+    showError('Please enter your OpenAI API key at the top of the page.');
     return;
   }
 
   setLoadingState(true);
   outputArea.innerHTML = '<p class="output-placeholder">Generating review…</p>';
 
+  const prompt = buildPrompt(values);
+
   try {
-    const res = await fetch('/generate', {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...values, apiKey: storedApiKey }),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${storedApiKey}`,
+      },
+      body: JSON.stringify({
+        model: values.model,
+        messages: [{ role: 'user', content: prompt }],
+      }),
     });
 
     const data = await res.json();
 
-    if (!res.ok || data.error) {
-      showError(data.error || `Request failed (${res.status})`);
+    if (!res.ok) {
+      showError(data?.error?.message || `OpenAI error (${res.status})`);
     } else {
-      showResult(data.review);
+      showResult(data.choices[0]?.message?.content || '');
     }
   } catch (err) {
-    showError(err.message || 'Network error — is the server running?');
+    showError(err.message || 'Network error.');
   } finally {
     setLoadingState(false);
   }
@@ -267,7 +301,6 @@ generateBtn.addEventListener('click', async () => {
 copyBtn.addEventListener('click', async () => {
   const text = outputArea.textContent;
   if (!text) return;
-
   try {
     await navigator.clipboard.writeText(text);
     copyBtn.textContent = 'Copied!';
