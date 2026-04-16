@@ -1,0 +1,4 @@
+TEMPFOLDER/
+.env
+node_modules/
+*.log
