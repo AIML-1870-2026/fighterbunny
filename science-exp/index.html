@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Science Experiment Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <div class="page">
+
+    <header class="site-header">
+      <div class="header-icon">🧪</div>
+      <div>
+        <h1>Science Experiment Generator</h1>
+        <p class="subtitle">Get a custom experiment based on your grade level and available supplies.</p>
+      </div>
+    </header>
+
+    <!-- API Key Card -->
+    <section class="card key-card">
+      <div class="key-row">
+        <div class="key-input-group">
+          <label for="api-key-input">OpenAI API Key</label>
+          <input
+            type="password"
+            id="api-key-input"
+            placeholder="sk-proj-…"
+            autocomplete="off"
+            spellcheck="false"
+          >
+        </div>
+        <div class="key-upload-group">
+          <label class="upload-label" for="env-file-input">&#128196; Upload .env</label>
+          <input type="file" id="env-file-input" accept=".env,.txt" style="display:none">
+        </div>
+      </div>
+      <p class="key-hint">Your key is never stored — it lives in memory only while this tab is open.</p>
+      <span id="key-status-badge" class="key-status-badge"></span>
+    </section>
+
+    <!-- Form Card -->
+    <main class="card">
+      <form id="experiment-form" novalidate>
+
+        <div class="field-group">
+          <label for="grade-level">Grade Level</label>
+          <select id="grade-level" required>
+            <option value="" disabled selected>Select a grade level</option>
+            <option>Kindergarten</option>
+            <option>1st Grade</option>
+            <option>2nd Grade</option>
+            <option>3rd Grade</option>
+            <option>4th Grade</option>
+            <option>5th Grade</option>
+            <option>6th Grade</option>
+            <option>7th Grade</option>
+            <option>8th Grade</option>
+            <option>9th Grade</option>
+            <option>10th Grade</option>
+            <option>11th Grade</option>
+            <option>12th Grade</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label for="supplies">Available Supplies</label>
+          <textarea
+            id="supplies"
+            rows="4"
+            required
+            placeholder="e.g., baking soda, vinegar, balloons, string, paper towels, food coloring"
+          ></textarea>
+          <p class="field-hint">Enter items you have on hand or can easily acquire, separated by commas.</p>
+        </div>
+
+        <div class="field-group">
+          <label for="model">Model</label>
+          <select id="model" required>
+            <option value="" disabled selected>Select a model</option>
+            <option value="gpt-4o">gpt-4o</option>
+            <option value="gpt-4o-mini">gpt-4o-mini</option>
+            <option value="gpt-4-turbo">gpt-4-turbo</option>
+          </select>
+        </div>
+
+        <button type="submit" id="submit-btn" class="primary-btn" disabled>
+          Generate Experiment
+        </button>
+
+      </form>
+    </main>
+
+    <!-- Output Card -->
+    <section id="output-section" class="card hidden">
+      <div class="output-header">
+        <h2>Your Experiment</h2>
+        <div class="output-actions">
+          <button id="copy-btn" class="secondary-btn">Copy to Clipboard</button>
+          <button id="again-btn" class="secondary-btn">Generate Another</button>
+        </div>
+      </div>
+      <div id="output-area"></div>
+    </section>
+
+    <!-- Error Card -->
+    <section id="error-section" class="card error-card hidden">
+      <p id="error-message"></p>
+    </section>
+
+  </div>
+
+  <script src="client.js"></script>
+</body>
+</html>
