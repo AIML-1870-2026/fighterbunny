@@ -1,0 +1,1668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Blackjack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --felt:#1a3a2a;
+  --felt-dark:#112510;
+  --gold:#c9a84c;
+  --gold-dim:#8a6e2f;
+  --cream:#f5f0e8;
+  --chrome:#0f0f0f;
+  --panel:#141414;
+  --panel2:#1c1c1c;
+  --border:#2a2a2a;
+  --text:#e8e0d0;
+  --text-dim:#8a8070;
+  --green:#2ecc71;
+  --red:#e74c3c;
+  --blue:#4a9eff;
+  --amber:#f0a500;
+  --gray:#666;
+}
+html,body{height:100%;background:var(--chrome);color:var(--text);font-family:'DM Sans',sans-serif;overflow:hidden}
+h1,h2,h3,h4{font-family:'Playfair Display',serif}
+
+/* HEADER */
+#header{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:var(--chrome);border-bottom:1px solid var(--border);height:52px;flex-shrink:0}
+#header h1{font-size:1.3rem;color:var(--gold);letter-spacing:1px}
+#header-right{display:flex;align-items:center;gap:16px}
+#api-dot{width:8px;height:8px;border-radius:50%;background:var(--gray)}
+#api-dot.connected{background:var(--green)}
+#api-dot.error{background:var(--red)}
+#call-counter{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--text-dim)}
+.icon-btn{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:1.1rem;padding:4px 8px;border-radius:4px;transition:color .2s}
+.icon-btn:hover{color:var(--gold)}
+
+/* LAYOUT */
+#app{display:flex;height:calc(100vh - 52px - 36px)}
+#game-area{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+#agent-panel{width:340px;flex-shrink:0;background:rgba(20,20,20,.95);backdrop-filter:blur(12px);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+
+/* TABLE */
+#table{flex:1;background:var(--felt);position:relative;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:20px;overflow:hidden}
+#table::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");pointer-events:none}
+
+/* SHOE */
+#shoe-area{position:absolute;top:16px;right:20px;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+#shoe-label{font-size:.65rem;color:var(--text-dim);font-family:'JetBrains Mono',monospace}
+#shoe-bar-wrap{width:80px;height:10px;background:rgba(0,0,0,.4);border-radius:5px;overflow:hidden;border:1px solid rgba(201,168,76,.2)}
+#shoe-bar{height:100%;background:var(--gold);border-radius:5px;transition:width .5s}
+
+/* HANDS */
+#dealer-area,#player-area{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%}
+.hand-label{font-size:.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px}
+.hand-cards{display:flex;gap:-8px;min-height:90px;align-items:center;justify-content:center;flex-wrap:wrap}
+.split-hands{display:flex;gap:20px;align-items:flex-start;justify-content:center}
+.split-hand{display:flex;flex-direction:column;align-items:center;gap:6px}
+.split-hand.active-split{outline:2px solid var(--gold);outline-offset:8px;border-radius:4px;padding:4px}
+.hand-total{font-family:'JetBrains Mono',monospace;font-size:.85rem;color:var(--gold);min-height:20px}
+
+/* CARDS */
+.card{width:60px;height:84px;border-radius:6px;background:var(--cream);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.5),0 1px 3px rgba(0,0,0,.3);position:relative;font-family:'Playfair Display',serif;transition:transform .15s;flex-shrink:0;margin:0 -4px;cursor:default}
+.card:first-child{margin-left:0}
+.card.red{color:#c0392b}
+.card.black{color:#1a1a1a}
+.card .rank{font-size:1.1rem;font-weight:700;line-height:1}
+.card .suit{font-size:1rem;line-height:1}
+.card-corner{position:absolute;display:flex;flex-direction:column;align-items:center;line-height:1.1;font-size:.65rem;font-weight:700}
+.card-corner.tl{top:4px;left:5px}
+.card-corner.br{bottom:4px;right:5px;transform:rotate(180deg)}
+.card.face-down{background:linear-gradient(135deg,#1a4a3a 25%,#0f2a1a 25%,#0f2a1a 50%,#1a4a3a 50%,#1a4a3a 75%,#0f2a1a 75%);background-size:12px 12px;border:2px solid var(--gold-dim)}
+.card.face-down::after{content:'🂠';font-size:2.5rem;position:absolute;color:rgba(201,168,76,.3)}
+.card.deal-in{animation:dealIn .25s ease-out}
+.card.flip-reveal{animation:flipReveal .4s ease-out}
+@keyframes dealIn{from{transform:translateY(-40px) rotate(-5deg);opacity:0}to{transform:none;opacity:1}}
+@keyframes flipReveal{0%{transform:rotateY(90deg)}100%{transform:rotateY(0deg)}}
+
+/* BET AREA */
+#bet-area{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;max-width:320px}
+#bet-controls{display:flex;align-items:center;gap:10px;width:100%}
+#bet-controls label{font-size:.75rem;color:var(--text-dim);white-space:nowrap}
+#bet-input{background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--gold);font-family:'JetBrains Mono',monospace;font-size:1rem;padding:6px 10px;border-radius:4px;width:90px;text-align:center}
+#bet-input:focus{outline:none;border-color:var(--gold)}
+#bet-slider{flex:1;accent-color:var(--gold)}
+#deal-btn{background:var(--gold);color:var(--chrome);font-family:'DM Sans',sans-serif;font-weight:600;font-size:.9rem;padding:10px 28px;border:none;border-radius:6px;cursor:pointer;transition:all .2s;letter-spacing:.5px}
+#deal-btn:hover{background:#e0b85a;transform:translateY(-1px)}
+#deal-btn:disabled{background:var(--gray);cursor:not-allowed;transform:none}
+
+/* ACTION BUTTONS */
+#action-buttons{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.action-btn{background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--text);font-family:'DM Sans',sans-serif;font-size:.8rem;padding:8px 16px;border-radius:4px;cursor:pointer;transition:all .2s;position:relative}
+.action-btn:hover:not(:disabled){background:rgba(255,255,255,.12);border-color:var(--text-dim)}
+.action-btn:disabled{opacity:.3;cursor:not-allowed}
+.action-btn.recommended{border-color:var(--gold);box-shadow:0 0 8px rgba(201,168,76,.4);color:var(--gold)}
+.action-btn .key-hint{position:absolute;top:2px;right:4px;font-size:.55rem;color:var(--text-dim);font-family:'JetBrains Mono',monospace}
+
+/* FOOTER */
+#footer{height:36px;background:var(--chrome);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;padding:0 20px;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--text-dim);flex-shrink:0}
+#footer span b{color:var(--text)}
+#footer .positive{color:var(--green)}
+#footer .negative{color:var(--red)}
+
+/* AGENT PANEL */
+#panel-tabs{display:flex;border-bottom:1px solid var(--border)}
+.panel-tab{flex:1;padding:10px;text-align:center;font-size:.8rem;cursor:pointer;color:var(--text-dim);border-bottom:2px solid transparent;transition:all .2s}
+.panel-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+#panel-content{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.tab-pane{display:none;flex-direction:column;flex:1;overflow:hidden}
+.tab-pane.active{display:flex}
+
+/* AGENT TAB */
+#agent-tab{padding:0;gap:0}
+#advisor-toggle-wrap{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+#advisor-toggle-wrap label{font-size:.8rem;color:var(--text-dim)}
+.toggle-group{display:flex;background:rgba(0,0,0,.4);border-radius:20px;padding:2px}
+.toggle-option{padding:4px 12px;border-radius:18px;font-size:.75rem;cursor:pointer;transition:all .2s;color:var(--text-dim)}
+.toggle-option.active{background:var(--gold);color:var(--chrome);font-weight:600}
+
+#ai-output{padding:12px 16px;border-bottom:1px solid var(--border);min-height:120px}
+#ai-streaming{font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--text);line-height:1.6;min-height:60px;white-space:pre-wrap;word-break:break-word}
+.cursor-blink{display:inline-block;width:8px;height:13px;background:var(--gold);animation:blink .8s step-end infinite;vertical-align:text-bottom;margin-left:1px}
+@keyframes blink{50%{opacity:0}}
+#ai-action{margin-top:10px;display:flex;align-items:center;gap:10px}
+#ai-action-badge{background:var(--gold);color:var(--chrome);font-weight:700;font-size:.75rem;padding:4px 10px;border-radius:12px;text-transform:uppercase;letter-spacing:.5px}
+#ai-alt{font-size:.7rem;color:var(--text-dim);font-style:italic}
+
+#confidence-wrap{padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+#conf-bar-wrap{flex:1;height:8px;background:rgba(0,0,0,.4);border-radius:4px;overflow:hidden}
+#conf-bar{height:100%;border-radius:4px;transition:width .4s,background .4s}
+#conf-pct{font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--text-dim);width:36px;text-align:right}
+
+#agent-log-wrap{flex:1;overflow-y:auto;padding:8px 0}
+#agent-log-wrap::-webkit-scrollbar{width:4px}
+#agent-log-wrap::-webkit-scrollbar-track{background:transparent}
+#agent-log-wrap::-webkit-scrollbar-thumb{background:var(--border)}
+.log-entry{padding:5px 16px;font-family:'JetBrains Mono',monospace;font-size:.68rem;line-height:1.5;border-left:2px solid transparent}
+.log-entry.win{border-left-color:var(--green);color:var(--green)}
+.log-entry.loss{border-left-color:var(--red);color:var(--red)}
+.log-entry.push{border-left-color:var(--gray);color:var(--gray)}
+.log-entry.ai{border-left-color:var(--blue);color:var(--blue)}
+.log-entry.override{border-left-color:var(--amber);color:var(--amber)}
+.log-entry.info{color:var(--text-dim)}
+#log-actions{padding:8px 16px;border-top:1px solid var(--border)}
+#copy-log-btn{background:none;border:1px solid var(--border);color:var(--text-dim);font-size:.7rem;padding:5px 12px;border-radius:4px;cursor:pointer;transition:all .2s}
+#copy-log-btn:hover{border-color:var(--text-dim);color:var(--text)}
+
+/* STATS TAB */
+#stats-tab{padding:16px;gap:12px;overflow-y:auto}
+.stat-row{display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.stat-label{font-size:.75rem;color:var(--text-dim)}
+.stat-val{font-family:'JetBrains Mono',monospace;font-size:.85rem;color:var(--text)}
+.stat-val.positive{color:var(--green)}
+.stat-val.negative{color:var(--red)}
+#pnl-chart-wrap{margin-top:8px}
+#pnl-chart-label{font-size:.7rem;color:var(--text-dim);margin-bottom:4px}
+#pnl-canvas{width:100%;height:80px;border-radius:4px;background:rgba(0,0,0,.3)}
+
+/* MODALS */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;display:flex;align-items:center;justify-content:center}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:28px;max-width:520px;width:90%;max-height:90vh;overflow-y:auto;position:relative}
+.modal h2{color:var(--gold);margin-bottom:20px;font-size:1.4rem}
+.modal h3{color:var(--text-dim);font-size:.8rem;text-transform:uppercase;letter-spacing:2px;margin:20px 0 10px}
+.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text-dim);font-size:1.2rem;cursor:pointer}
+.modal-close:hover{color:var(--text)}
+
+/* FORM ELEMENTS */
+.field-group{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.field-group label{font-size:.75rem;color:var(--text-dim)}
+.field-input{background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text);font-family:'DM Sans',sans-serif;font-size:.85rem;padding:8px 12px;border-radius:4px;width:100%}
+.field-input:focus{outline:none;border-color:var(--gold)}
+.field-input[type=password]{letter-spacing:2px}
+.field-select{background:var(--panel2);border:1px solid var(--border);color:var(--text);font-family:'DM Sans',sans-serif;font-size:.85rem;padding:8px 12px;border-radius:4px;width:100%}
+.field-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
+.field-row label{font-size:.8rem;color:var(--text)}
+.toggle-check{width:36px;height:20px;appearance:none;background:var(--border);border-radius:10px;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
+.toggle-check:checked{background:var(--gold)}
+.toggle-check::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:2px;left:2px;transition:left .2s}
+.toggle-check:checked::after{left:18px}
+.btn-primary{background:var(--gold);color:var(--chrome);font-weight:600;font-size:.9rem;padding:10px 24px;border:none;border-radius:6px;cursor:pointer;transition:all .2s;width:100%;margin-top:8px}
+.btn-primary:hover{background:#e0b85a}
+.btn-secondary{background:none;border:1px solid var(--border);color:var(--text-dim);font-size:.8rem;padding:8px 16px;border-radius:4px;cursor:pointer;transition:all .2s}
+.btn-secondary:hover{border-color:var(--text-dim);color:var(--text)}
+.env-upload-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.06);border:1px dashed var(--border);color:var(--text-dim);font-size:.8rem;padding:8px 14px;border-radius:4px;cursor:pointer;transition:all .2s;margin-top:6px}
+.env-upload-btn:hover{border-color:var(--text-dim);color:var(--text)}
+.inline-err{font-size:.72rem;color:var(--red);margin-top:4px}
+.inline-ok{font-size:.72rem;color:var(--green);margin-top:4px}
+
+/* WIZARD */
+#wizard-step{transition:opacity .2s}
+.wizard-desc{font-size:.85rem;color:var(--text-dim);line-height:1.6;margin-bottom:20px}
+.wizard-nav{display:flex;gap:10px;margin-top:16px}
+
+/* RESULT OVERLAY */
+#result-overlay{position:absolute;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50;flex-direction:column;gap:10px}
+#result-overlay.show{display:flex}
+#result-badge{font-family:'Playfair Display',serif;font-size:2.5rem;font-weight:700}
+#result-badge.win{color:var(--green)}
+#result-badge.loss{color:var(--red)}
+#result-badge.push{color:var(--text-dim)}
+#result-badge.blackjack{color:var(--gold);text-shadow:0 0 20px rgba(201,168,76,.6)}
+#result-amount{font-family:'JetBrains Mono',monospace;font-size:1rem}
+
+/* INSURANCE PROMPT */
+#insurance-prompt{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--panel);border:1px solid var(--gold);border-radius:10px;padding:20px;text-align:center;z-index:60;display:none}
+#insurance-prompt.show{display:block}
+#insurance-prompt h3{color:var(--gold);margin-bottom:10px}
+#insurance-prompt p{font-size:.8rem;color:var(--text-dim);margin-bottom:14px}
+#insurance-btns{display:flex;gap:10px;justify-content:center}
+
+/* AUTOPILOT indicator */
+#autopilot-indicator{position:absolute;top:16px;left:20px;background:rgba(201,168,76,.15);border:1px solid var(--gold);border-radius:20px;padding:4px 12px;font-size:.7rem;color:var(--gold);display:none;align-items:center;gap:6px}
+#autopilot-indicator.show{display:flex}
+.pulse-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+
+/* MOBILE */
+@media(max-width:768px){
+  #agent-panel{position:fixed;bottom:0;left:0;right:0;width:100%;height:50vh;border-left:none;border-top:1px solid var(--border);transform:translateY(calc(100% - 44px));transition:transform .3s;z-index:200}
+  #agent-panel.open{transform:translateY(0)}
+  #panel-tabs{cursor:pointer}
+  #app{flex-direction:column}
+  #game-area{height:calc(100vh - 52px - 36px)}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <h1>Agent Blackjack</h1>
+  <div id="header-right">
+    <span id="api-dot" title="API status"></span>
+    <span id="call-counter">0 calls · ~$0.000</span>
+    <button class="icon-btn" id="sound-btn" title="Sound effects">🔇</button>
+    <button class="icon-btn" id="settings-btn" title="Settings">⚙</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- GAME AREA -->
+  <div id="game-area">
+    <div id="table">
+      <div id="shoe-area">
+        <span id="shoe-label">Shoe: —</span>
+        <div id="shoe-bar-wrap"><div id="shoe-bar" style="width:100%"></div></div>
+      </div>
+
+      <div id="autopilot-indicator"><div class="pulse-dot"></div> Autopilot</div>
+
+      <div id="dealer-area">
+        <div class="hand-label">Dealer</div>
+        <div class="hand-cards" id="dealer-cards"></div>
+        <div class="hand-total" id="dealer-total"></div>
+      </div>
+
+      <div id="player-area">
+        <div class="hand-label">Player</div>
+        <div id="player-hands-wrap">
+          <div class="hand-cards" id="player-cards"></div>
+        </div>
+        <div class="hand-total" id="player-total"></div>
+      </div>
+
+      <div id="bet-area">
+        <div id="bet-controls">
+          <label>Bet: $</label>
+          <input type="number" id="bet-input" value="25" min="10" max="500" step="5">
+          <input type="range" id="bet-slider" min="10" max="500" step="5" value="25">
+        </div>
+        <button id="deal-btn">Deal (Space)</button>
+      </div>
+
+      <div id="action-buttons" style="display:none">
+        <button class="action-btn" id="btn-hit" data-action="hit">Hit<span class="key-hint">H</span></button>
+        <button class="action-btn" id="btn-stand" data-action="stand">Stand<span class="key-hint">S</span></button>
+        <button class="action-btn" id="btn-double" data-action="double">Double<span class="key-hint">D</span></button>
+        <button class="action-btn" id="btn-split" data-action="split">Split<span class="key-hint">P</span></button>
+        <button class="action-btn" id="btn-surrender" data-action="surrender">Surrender<span class="key-hint">U</span></button>
+        <button class="action-btn" id="btn-insurance-take" data-action="ins-take" style="display:none">Take Insurance</button>
+        <button class="action-btn" id="btn-insurance-dec" data-action="ins-decline" style="display:none">Decline</button>
+      </div>
+
+      <div id="result-overlay">
+        <div id="result-badge"></div>
+        <div id="result-amount"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AGENT PANEL -->
+  <div id="agent-panel">
+    <div id="panel-tabs">
+      <div class="panel-tab active" data-tab="agent">Agent</div>
+      <div class="panel-tab" data-tab="stats">Stats</div>
+    </div>
+    <div id="panel-content">
+
+      <!-- AGENT TAB -->
+      <div class="tab-pane active" id="agent-tab">
+        <div id="advisor-toggle-wrap">
+          <label>Mode</label>
+          <div class="toggle-group">
+            <div class="toggle-option active" id="mode-advisor">Advisor</div>
+            <div class="toggle-option" id="mode-autopilot">Autopilot</div>
+          </div>
+        </div>
+        <div id="ai-output">
+          <div id="ai-streaming">Waiting for hand...</div>
+          <div id="ai-action" style="display:none">
+            <div id="ai-action-badge"></div>
+            <div id="ai-alt"></div>
+          </div>
+        </div>
+        <div id="confidence-wrap" style="display:none">
+          <span style="font-size:.7rem;color:var(--text-dim)">Confidence</span>
+          <div id="conf-bar-wrap"><div id="conf-bar"></div></div>
+          <span id="conf-pct"></span>
+        </div>
+        <div id="agent-log-wrap"><div id="agent-log"></div></div>
+        <div id="log-actions">
+          <button id="copy-log-btn">Copy Log</button>
+        </div>
+      </div>
+
+      <!-- STATS TAB -->
+      <div class="tab-pane" id="stats-tab">
+        <div class="stat-row"><span class="stat-label">Round</span><span class="stat-val" id="s-round">0</span></div>
+        <div class="stat-row"><span class="stat-label">Wins</span><span class="stat-val positive" id="s-wins">0</span></div>
+        <div class="stat-row"><span class="stat-label">Losses</span><span class="stat-val negative" id="s-losses">0</span></div>
+        <div class="stat-row"><span class="stat-label">Pushes</span><span class="stat-val" id="s-pushes">0</span></div>
+        <div class="stat-row"><span class="stat-label">Win Rate</span><span class="stat-val" id="s-winrate">—</span></div>
+        <div class="stat-row"><span class="stat-label">Net P&L</span><span class="stat-val" id="s-pnl">$0</span></div>
+        <div class="stat-row"><span class="stat-label">AI Accuracy</span><span class="stat-val" id="s-accuracy">—</span></div>
+        <div id="pnl-chart-wrap">
+          <div id="pnl-chart-label">Balance over rounds</div>
+          <canvas id="pnl-canvas" width="300" height="80"></canvas>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div id="footer">
+  <span>Balance: <b id="f-balance">$1,000</b></span>
+  <span>Bet: <b id="f-bet">$25</b></span>
+  <span>Round: <b id="f-round">0</b></span>
+  <span id="f-rc-wrap">RC: <b id="f-rc">0</b></span>
+  <span id="f-tc-wrap">TC: <b id="f-tc">0.0</b></span>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settings-modal" style="display:none">
+  <div class="modal" style="max-width:560px">
+    <button class="modal-close" id="settings-close">✕</button>
+    <h2>Settings</h2>
+
+    <h3>API Configuration</h3>
+    <div class="field-group">
+      <label>OpenAI API Key</label>
+      <input type="password" class="field-input" id="cfg-apikey" placeholder="sk-...">
+      <label class="env-upload-btn" for="env-upload-settings">📂 Upload .env file</label>
+      <input type="file" id="env-upload-settings" style="display:none" accept=".env,text/plain">
+      <span id="env-status-settings" style="font-size:.72rem;color:var(--text-dim)"></span>
+    </div>
+    <div class="field-group">
+      <label>OpenAI Model</label>
+      <select class="field-select" id="cfg-model">
+        <option value="gpt-4o">gpt-4o</option>
+        <option value="gpt-4-turbo">gpt-4-turbo</option>
+        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+      </select>
+    </div>
+    <div class="field-row">
+      <label>API Calls This Session</label>
+      <span id="cfg-calls" style="font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--text-dim)">0 · ~$0.000</span>
+    </div>
+
+    <h3>Game Rules</h3>
+    <div class="field-group">
+      <label>Number of Decks</label>
+      <select class="field-select" id="cfg-decks">
+        <option value="1">1 Deck</option>
+        <option value="2">2 Decks</option>
+        <option value="4">4 Decks</option>
+        <option value="6" selected>6 Decks</option>
+        <option value="8">8 Decks</option>
+      </select>
+    </div>
+    <div class="field-row"><label>Dealer Hits Soft 17 (H17)</label><input type="checkbox" class="toggle-check" id="cfg-h17" checked></div>
+    <div class="field-group">
+      <label>Blackjack Payout</label>
+      <select class="field-select" id="cfg-bjpay">
+        <option value="3:2" selected>3:2</option>
+        <option value="6:5">6:5</option>
+      </select>
+    </div>
+    <div class="field-row"><label>Enable Surrender</label><input type="checkbox" class="toggle-check" id="cfg-surrender"></div>
+    <div class="field-row"><label>Enable Insurance</label><input type="checkbox" class="toggle-check" id="cfg-insurance"></div>
+    <div class="field-row"><label>Double After Split (DAS)</label><input type="checkbox" class="toggle-check" id="cfg-das" checked></div>
+    <div class="field-group">
+      <label>Re-split Maximum (1–4)</label>
+      <input type="number" class="field-input" id="cfg-resplit" value="3" min="1" max="4">
+    </div>
+    <div class="field-row"><label>Allow Any 10-value Split</label><input type="checkbox" class="toggle-check" id="cfg-10split" checked></div>
+
+    <h3>Session</h3>
+    <div class="field-group"><label>Starting Balance ($)</label><input type="number" class="field-input" id="cfg-balance" value="1000" min="100" step="100"></div>
+    <div class="field-group"><label>Minimum Bet ($)</label><input type="number" class="field-input" id="cfg-minbet" value="10" min="1"></div>
+    <div class="field-group"><label>Maximum Bet ($)</label><input type="number" class="field-input" id="cfg-maxbet" value="500" min="10"></div>
+    <div class="field-group"><label>Max Rounds per Session (0 = unlimited)</label><input type="number" class="field-input" id="cfg-maxrounds" value="0" min="0"></div>
+    <div class="field-group"><label>Max Loss Limit (0 = none)</label><input type="number" class="field-input" id="cfg-losslimit" value="0" min="0"></div>
+    <button class="btn-secondary" id="cfg-resetbalance" style="margin-bottom:8px">Reset Balance</button>
+
+    <h3>Display</h3>
+    <div class="field-row"><label>Show Running Count</label><input type="checkbox" class="toggle-check" id="cfg-showrc" checked></div>
+    <div class="field-row"><label>Show True Count</label><input type="checkbox" class="toggle-check" id="cfg-showtc" checked></div>
+    <div class="field-row"><label>Sound Effects</label><input type="checkbox" class="toggle-check" id="cfg-sound"></div>
+    <div class="field-group"><label>Autopilot Delay (seconds)</label><input type="range" id="cfg-apdelay" min="0.5" max="3" step="0.5" value="1.5" style="accent-color:var(--gold)"><span id="cfg-apdelay-val" style="font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--text-dim)">1.5s</span></div>
+
+    <button class="btn-primary" id="settings-save">Save Settings</button>
+  </div>
+</div>
+
+<!-- WIZARD MODAL -->
+<div class="modal-overlay" id="wizard-modal" style="display:none">
+  <div class="modal" style="max-width:480px">
+    <h2 id="wizard-title">Welcome to Agent Blackjack</h2>
+    <div id="wizard-body"></div>
+  </div>
+</div>
+
+<audio id="snd-deal" preload="auto"></audio>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+const S = {
+  apiKey: '',
+  model: 'gpt-4o',
+  balance: 1000,
+  startBalance: 1000,
+  bet: 25,
+  round: 0,
+  callCount: 0,
+  estCost: 0,
+  mode: 'advisor', // advisor | autopilot
+  autopilotPause: false,
+  autopilotRunning: false,
+  soundOn: false,
+  cfg: {
+    decks:6,h17:true,bjpay:'3:2',surrender:false,insurance:false,das:true,
+    resplit:3,split10:true,minbet:10,maxbet:500,maxrounds:0,losslimit:0,
+    showrc:true,showtc:true,apdelay:1.5
+  },
+  shoe:[],shoeTotal:0,
+  runningCount:0,
+  game: null, // active game state
+  stats:{wins:0,losses:0,pushes:0,aiCorrect:0,aiTotal:0,balHistory:[1000]},
+  sessionLog: [],
+  aiPending: false,
+};
+
+// ============================================================
+// BASIC STRATEGY FALLBACK TABLE
+// ============================================================
+// Returns action string for given hand vs dealer upcard
+// hard[total][dealerUp], soft[total][dealerUp], pair[rank][dealerUp]
+function basicStrategy(playerHand, issoft, canDouble, canSplit, canSurrender, h17) {
+  const cards = playerHand;
+  const dealerUp = S.game ? handValue([S.game.dealer[0]]).soft : 7;
+  const d = dealerUp > 10 ? 10 : dealerUp;
+  const total = issoft ? handValue(cards).soft : handValue(cards).hard;
+
+  // Pair check
+  if (canSplit && cards.length === 2) {
+    const r1 = cardRankVal(cards[0]), r2 = cardRankVal(cards[1]);
+    if (r1 === r2) {
+      const rank = r1;
+      // Always split aces and 8s
+      if (rank === 11 || rank === 8) return 'split';
+      if (rank === 10) return 'stand'; // never split 10s by default
+      if (rank === 9) return (d===7||d===10||d===11)?'stand':'split';
+      if (rank === 7) return d<=7?'split':'hit';
+      if (rank === 6) return d<=6?'split':'hit';
+      if (rank === 5) return (canDouble&&d<=9)?'double':'hit';
+      if (rank === 4) return (d===5||d===6)?'split':'hit';
+      if (rank === 3||rank===2) return d<=7?'split':'hit';
+    }
+  }
+
+  // Soft hands
+  if (issoft && total >= 13 && total <= 21) {
+    const soft = total;
+    if (soft===21) return 'stand';
+    if (soft>=19) return 'stand';
+    if (soft===18) {
+      if (canDouble&&(d>=2&&d<=6)) return 'double';
+      if (d>=9&&d<=11) return 'hit';
+      return 'stand';
+    }
+    if (soft===17) return (canDouble&&d>=3&&d<=6)?'double':'hit';
+    if (soft>=15&&soft<=16) return (canDouble&&d>=4&&d<=6)?'double':'hit';
+    if (soft>=13&&soft<=14) return (canDouble&&d>=5&&d<=6)?'double':'hit';
+  }
+
+  // Hard hands
+  const hard = handValue(cards).hard;
+  if (hard>=17) return 'stand';
+  if (hard>=13&&hard<=16) {
+    if (canSurrender&&hard===16&&d>=9) return 'surrender';
+    if (canSurrender&&hard===15&&d===10) return 'surrender';
+    return d<=6?'stand':'hit';
+  }
+  if (hard===12) return (d>=4&&d<=6)?'stand':'hit';
+  if (hard===11) return canDouble?'double':'hit';
+  if (hard===10) return (canDouble&&d<=9)?'double':'hit';
+  if (hard===9) return (canDouble&&d>=3&&d<=6)?'double':'hit';
+  return 'hit';
+}
+
+// ============================================================
+// DECK / SHOE
+// ============================================================
+const RANKS = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+const SUITS = ['♠','♥','♦','♣'];
+
+function buildShoe(numDecks) {
+  const shoe = [];
+  for (let d=0;d<numDecks;d++)
+    for (const suit of SUITS)
+      for (const rank of RANKS)
+        shoe.push({rank,suit,color:suit==='♥'||suit==='♦'?'red':'black'});
+  shuffle(shoe);
+  return shoe;
+}
+
+function shuffle(arr) {
+  for (let i=arr.length-1;i>0;i--) {
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+}
+
+function dealCard(faceDown=false) {
+  if (S.shoe.length < S.shoeTotal * 0.25) {
+    S.shoe = buildShoe(S.cfg.decks);
+    S.shoeTotal = S.shoe.length;
+    S.runningCount = 0;
+    addLog('info','--- Shoe reshuffled. Count reset. ---');
+  }
+  const card = S.shoe.pop();
+  card.faceDown = faceDown;
+  if (!faceDown) countCard(card);
+  return card;
+}
+
+function countCard(card) {
+  const v = cardRankVal(card);
+  if (v>=2&&v<=6) S.runningCount++;
+  else if (v>=10) S.runningCount--;
+}
+
+function cardRankVal(card) {
+  if (card.rank==='A') return 11;
+  if (['J','Q','K'].includes(card.rank)) return 10;
+  return parseInt(card.rank);
+}
+
+function handValue(cards) {
+  let hard=0, aces=0;
+  for (const c of cards) {
+    if (c.faceDown) continue;
+    const v=cardRankVal(c);
+    if (v===11) aces++;
+    hard+=v;
+  }
+  // reduce aces
+  let soft=hard;
+  while (soft>21&&aces>0){soft-=10;aces--;}
+  const origAces=cards.filter(c=>!c.faceDown&&c.rank==='A').length;
+  const isSoft=origAces>0&&soft<=21&&soft+10<=21;
+  return {hard:soft, soft:isSoft?soft+10:soft, isSoft};
+}
+
+function trueCount() {
+  const remaining = S.shoe.length/52;
+  return remaining<0.5?0:+(S.runningCount/remaining).toFixed(1);
+}
+
+// ============================================================
+// CARD RENDERING
+// ============================================================
+function cardEl(card) {
+  const el = document.createElement('div');
+  el.className = 'card deal-in' + (card.faceDown?' face-down':'') + (card.color?' '+card.color:'');
+  el.dataset.rank = card.rank;
+  el.dataset.suit = card.suit;
+  if (!card.faceDown) {
+    el.innerHTML = `
+      <div class="card-corner tl"><span>${card.rank}</span><span>${card.suit}</span></div>
+      <span class="suit" style="font-size:1.8rem">${card.suit}</span>
+      <div class="card-corner br"><span>${card.rank}</span><span>${card.suit}</span></div>`;
+  }
+  return el;
+}
+
+function flipCard(el, card) {
+  el.classList.remove('face-down');
+  el.classList.add('flip-reveal');
+  el.className = 'card flip-reveal ' + card.color;
+  el.innerHTML = `
+    <div class="card-corner tl"><span>${card.rank}</span><span>${card.suit}</span></div>
+    <span class="suit" style="font-size:1.8rem">${card.suit}</span>
+    <div class="card-corner br"><span>${card.rank}</span><span>${card.suit}</span></div>`;
+}
+
+// ============================================================
+// GAME ENGINE
+// ============================================================
+let G = null; // active game
+
+function startRound() {
+  if (!S.apiKey) { openWizard(); return; }
+  if (S.balance < S.cfg.minbet) { alert('Insufficient balance!'); return; }
+
+  const bet = parseInt(document.getElementById('bet-input').value)||25;
+  if (bet<S.cfg.minbet||bet>S.cfg.maxbet||bet>S.balance) {
+    alert(`Bet must be $${S.cfg.minbet}–$${Math.min(S.cfg.maxbet,S.balance)}.`); return;
+  }
+
+  S.round++;
+  S.balance -= bet;
+
+  if (!S.shoe.length) {
+    S.shoe = buildShoe(S.cfg.decks);
+    S.shoeTotal = S.shoe.length;
+  }
+
+  G = {
+    bet,
+    dealer: [dealCard(), dealCard(true)],
+    playerHands: [[dealCard(), dealCard()]],
+    activeHand: 0,
+    splitCount: 0,
+    over: false,
+    insuranceBet: 0,
+  };
+  S.game = G;
+
+  renderTable();
+  document.getElementById('bet-area').style.display='none';
+  document.getElementById('action-buttons').style.display='flex';
+  document.getElementById('deal-btn').style.display='none';
+  hideResult();
+
+  updateFooter();
+  updateShoeBar();
+
+  addLog('ai',`[R${S.round} — Bet] $${bet} placed.`);
+
+  // Check for player blackjack immediately
+  const ph = G.playerHands[0];
+  const pval = handValue(ph);
+  if (pval.soft===21&&ph.length===2) {
+    // Blackjack! Check dealer
+    revealHoleCard();
+    const dval = handValue(G.dealer);
+    if (dval.soft===21&&G.dealer.length===2) {
+      endRound('push');
+    } else {
+      endRound('blackjack');
+    }
+    return;
+  }
+
+  // Insurance offer?
+  if (S.cfg.insurance && cardRankVal(G.dealer[0])===11) {
+    offerInsurance();
+    return;
+  }
+
+  askAI('player_action');
+}
+
+function offerInsurance() {
+  const aiRec = trueCount()>=3;
+  showInsurancePrompt(aiRec);
+  askAI('insurance');
+}
+
+function showInsurancePrompt(aiRec) {
+  document.getElementById('btn-insurance-take').style.display='inline-flex';
+  document.getElementById('btn-insurance-dec').style.display='inline-flex';
+  document.getElementById('btn-hit').style.display='none';
+  document.getElementById('btn-stand').style.display='none';
+  document.getElementById('btn-double').style.display='none';
+  document.getElementById('btn-split').style.display='none';
+  document.getElementById('btn-surrender').style.display='none';
+  if (aiRec) {
+    document.getElementById('btn-insurance-take').classList.add('recommended');
+  } else {
+    document.getElementById('btn-insurance-dec').classList.add('recommended');
+  }
+}
+
+function handleAction(action) {
+  if (!G||G.over) return;
+  const hand = G.playerHands[G.activeHand];
+
+  if (action==='ins-take') {
+    G.insuranceBet = Math.floor(G.bet/2);
+    S.balance -= G.insuranceBet;
+    addLog('ai',`[R${S.round} — Insurance] Taken ($${G.insuranceBet}).`);
+    resetActionBtns();
+    askAI('player_action');
+    return;
+  }
+  if (action==='ins-decline') {
+    addLog('ai',`[R${S.round} — Insurance] Declined.`);
+    resetActionBtns();
+    askAI('player_action');
+    return;
+  }
+
+  // Check if AI recommended different
+  const aiRec = document.querySelector('.action-btn.recommended')?.dataset?.action;
+  if (aiRec && aiRec !== action) {
+    addLog('override',`[R${S.round}] Player override: chose ${action} (AI: ${aiRec})`);
+  }
+
+  if (action==='hit') {
+    hand.push(dealCard());
+    renderHand();
+    const v = handValue(hand);
+    if (v.hard>=21) { nextHand(); return; }
+    askAI('player_action');
+  } else if (action==='stand') {
+    nextHand();
+  } else if (action==='double') {
+    if (S.balance>=G.bet) {
+      S.balance-=G.bet; G.bet*=2;
+      hand.push(dealCard());
+      renderHand();
+      nextHand();
+    }
+  } else if (action==='split') {
+    doSplit();
+  } else if (action==='surrender') {
+    G.over=true;
+    const ret=Math.floor(G.bet/2);
+    S.balance+=ret;
+    addLog('info',`[R${S.round}] Surrendered. Returned $${ret}.`);
+    endRound('surrender');
+  }
+  updateFooter();
+}
+
+function doSplit() {
+  const hand = G.playerHands[G.activeHand];
+  if (hand.length!==2) return;
+  if (S.balance<G.bet) { alert('Insufficient balance to split.'); return; }
+  S.balance-=G.bet;
+
+  const c2 = hand.pop();
+  const newHand = [c2, dealCard()];
+  hand.push(dealCard());
+  G.playerHands.splice(G.activeHand+1,0,newHand);
+  G.splitCount++;
+
+  // If split aces: deal one card each, no more hits
+  if (cardRankVal(hand[0])===11) {
+    renderTable();
+    // play each ace hand automatically
+    setTimeout(()=>nextHand(),500);
+    return;
+  }
+
+  renderTable();
+  askAI('player_action');
+}
+
+function nextHand() {
+  G.activeHand++;
+  if (G.activeHand>=G.playerHands.length) {
+    // All hands done, dealer plays
+    dealerPlay();
+  } else {
+    renderTable();
+    askAI('player_action');
+  }
+}
+
+function dealerPlay() {
+  revealHoleCard();
+  renderTable();
+  // Dealer hits
+  let v = handValue(G.dealer);
+  while (v.hard<17||(S.cfg.h17&&v.isSoft&&v.soft===17)) {
+    G.dealer.push(dealCard());
+    v=handValue(G.dealer);
+  }
+  renderTable();
+  setTimeout(()=>resolveRound(),600);
+}
+
+function revealHoleCard() {
+  const hole = G.dealer[1];
+  hole.faceDown=false;
+  countCard(hole);
+  const holeEl = document.getElementById('dealer-cards').children[1];
+  if (holeEl) flipCard(holeEl, hole);
+  updateFooter();
+}
+
+function resolveRound() {
+  const dv = handValue(G.dealer);
+  const dealerBust = dv.hard>21;
+  let totalNet=0;
+
+  for (let i=0;i<G.playerHands.length;i++) {
+    const pv = handValue(G.playerHands[i]);
+    const isAceSplit = G.splitCount>0&&G.playerHands[i][0].rank==='A';
+    let payout=0, outcome='';
+
+    if (pv.hard>21) { outcome='bust'; payout=0; }
+    else if (dealerBust) { outcome='win'; payout=G.bet*2; }
+    else if (pv.hard>dv.hard) { outcome='win'; payout=G.bet*2; }
+    else if (pv.hard===dv.hard) { outcome='push'; payout=G.bet; }
+    else { outcome='loss'; payout=0; }
+
+    S.balance+=payout;
+    totalNet+=payout-G.bet;
+    if (outcome==='win') S.stats.wins++;
+    else if (outcome==='loss') S.stats.bust; // counted below
+    else if (outcome==='push') S.stats.pushes++;
+  }
+
+  // Insurance resolution
+  if (G.insuranceBet>0) {
+    const dv2=handValue(G.dealer);
+    if (dv2.soft===21&&G.dealer.length===2) {
+      S.balance+=G.insuranceBet*3;
+      addLog('win',`[R${S.round}] Insurance won! +$${G.insuranceBet*2}`);
+    } else {
+      addLog('loss',`[R${S.round}] Insurance lost.`);
+    }
+  }
+
+  G.over=true;
+  const net=totalNet;
+  if (net>0) { S.stats.wins+=(G.playerHands.length>1?G.playerHands.length-1:0); endRound('win',net); }
+  else if (net===0) endRound('push',0);
+  else { S.stats.losses++; endRound('loss',net); }
+}
+
+function endRound(outcome, net) {
+  G.over=true;
+  S.stats.balHistory.push(S.balance);
+  updateStats();
+  updateFooter();
+  renderTable();
+  document.getElementById('action-buttons').style.display='none';
+
+  let badge='', cls='';
+  if (outcome==='blackjack') {
+    const mult=S.cfg.bjpay==='3:2'?1.5:1.2;
+    const win=Math.floor(G.bet*mult)+G.bet;
+    S.balance+=win;
+    S.stats.wins++;
+    net=win-G.bet;
+    badge='Blackjack!'; cls='blackjack';
+    addLog('win',`[R${S.round} — BJ] +$${net.toFixed(0)}`);
+    playSound('blackjack');
+  } else if (outcome==='win') {
+    badge='Win'; cls='win';
+    addLog('win',`[R${S.round} — Win] +$${Math.abs(net).toFixed(0)}. Balance: $${S.balance}`);
+    playSound('win');
+  } else if (outcome==='push') {
+    S.balance+=G.bet;
+    badge='Push'; cls='push';
+    addLog('push',`[R${S.round} — Push] Bet returned. Balance: $${S.balance}`);
+  } else if (outcome==='loss') {
+    badge='Loss'; cls='loss';
+    addLog('loss',`[R${S.round} — Loss] -$${Math.abs(net).toFixed(0)}. Balance: $${S.balance}`);
+    playSound('loss');
+  } else if (outcome==='surrender') {
+    badge='Surrender'; cls='push';
+  } else if (outcome==='bust') {
+    S.stats.losses++;
+    badge='Bust'; cls='loss';
+    addLog('loss',`[R${S.round} — Bust] Lost $${G.bet}. Balance: $${S.balance}`);
+  }
+
+  showResult(badge,cls,net);
+  askAI('post_round');
+
+  // Check limits
+  if (S.balance<=0) {
+    setTimeout(()=>alert('You are out of chips! Start a new session.'),800);
+    return;
+  }
+  if (S.cfg.losslimit>0&&(S.startBalance-S.balance)>=S.cfg.losslimit) {
+    if (S.mode==='autopilot') { setMode('advisor'); }
+    setTimeout(()=>alert(`Max loss limit ($${S.cfg.losslimit}) reached. Switching to Advisor mode.`),600);
+    return;
+  }
+
+  setTimeout(()=>{
+    hideResult();
+    document.getElementById('bet-area').style.display='flex';
+    document.getElementById('deal-btn').style.display='block';
+    updateFooter();
+    if (S.mode==='autopilot'&&!S.autopilotPause) {
+      setTimeout(()=>autoRound(),S.cfg.apdelay*1000);
+    }
+  }, S.mode==='autopilot'?1200:2000);
+}
+
+function autoRound() {
+  if (S.mode!=='autopilot'||S.autopilotPause||!S.apiKey) return;
+  if (S.cfg.maxrounds>0&&S.round>=S.cfg.maxrounds) {
+    setMode('advisor');
+    addLog('info','Max rounds reached. Switched to Advisor mode.');
+    return;
+  }
+  startRound();
+}
+
+// ============================================================
+// RENDERING
+// ============================================================
+function renderTable() {
+  renderDealer();
+  renderHand();
+  updateShoeBar();
+}
+
+function renderDealer() {
+  const el=document.getElementById('dealer-cards');
+  el.innerHTML='';
+  for (const c of G.dealer) el.appendChild(cardEl(c));
+  const v=handValue(G.dealer);
+  document.getElementById('dealer-total').textContent=
+    G.over||!G.dealer[1].faceDown?`${v.isSoft?'Soft ':''} ${v.hard}`:'?';
+}
+
+function renderHand() {
+  const wrap=document.getElementById('player-hands-wrap');
+  if (G.playerHands.length>1) {
+    wrap.innerHTML='';
+    const splitWrap=document.createElement('div');
+    splitWrap.className='split-hands';
+    G.playerHands.forEach((hand,i)=>{
+      const hDiv=document.createElement('div');
+      hDiv.className='split-hand'+(i===G.activeHand?' active-split':'');
+      const cards=document.createElement('div');
+      cards.className='hand-cards';
+      hand.forEach(c=>cards.appendChild(cardEl(c)));
+      const tot=document.createElement('div');
+      tot.className='hand-total';
+      const v=handValue(hand);
+      tot.textContent=`${v.isSoft?'S':''}${v.hard}`;
+      hDiv.appendChild(cards);
+      hDiv.appendChild(tot);
+      splitWrap.appendChild(hDiv);
+    });
+    wrap.appendChild(splitWrap);
+    document.getElementById('player-total').textContent='';
+  } else {
+    const cardsEl=wrap.querySelector('#player-cards')||wrap.querySelector('.hand-cards');
+    const el=document.getElementById('player-cards')||cardsEl;
+    if (el) el.innerHTML='';
+    else { wrap.innerHTML='<div class="hand-cards" id="player-cards"></div>'; }
+    const pc=document.getElementById('player-cards');
+    if(pc){G.playerHands[0].forEach(c=>pc.appendChild(cardEl(c)));}
+    const v=handValue(G.playerHands[0]);
+    document.getElementById('player-total').textContent=
+      `${v.isSoft?'Soft ':''} ${v.hard}${v.isSoft&&v.soft!==v.hard?' / '+v.soft:''}`;
+  }
+  updateActionButtons();
+}
+
+function updateActionButtons() {
+  if (!G||G.over) { document.getElementById('action-buttons').style.display='none'; return; }
+  const hand=G.playerHands[G.activeHand];
+  const v=handValue(hand);
+  const canDouble=hand.length===2&&S.balance>=G.bet&&(!G.splitCount||S.cfg.das);
+  const isAceSplit=G.splitCount>0&&hand[0].rank==='A';
+  const canSplit=hand.length===2&&G.splitCount<S.cfg.resplit&&S.balance>=G.bet&&!isAceSplit&&
+    (cardRankVal(hand[0])===cardRankVal(hand[1])||(S.cfg.split10&&cardRankVal(hand[0])===10&&cardRankVal(hand[1])===10));
+
+  el('btn-hit').disabled=isAceSplit;
+  el('btn-double').disabled=!canDouble;
+  el('btn-split').disabled=!canSplit;
+  el('btn-surrender').style.display=S.cfg.surrender&&hand.length===2?'inline-flex':'none';
+  el('btn-insurance-take').style.display='none';
+  el('btn-insurance-dec').style.display='none';
+
+  // highlight AI recommendation
+  document.querySelectorAll('.action-btn').forEach(b=>b.classList.remove('recommended'));
+}
+
+function resetActionBtns() {
+  el('btn-insurance-take').style.display='none';
+  el('btn-insurance-dec').style.display='none';
+  el('btn-hit').style.display='inline-flex';
+  el('btn-stand').style.display='inline-flex';
+  el('btn-double').style.display='inline-flex';
+  el('btn-split').style.display='inline-flex';
+  if(S.cfg.surrender) el('btn-surrender').style.display='inline-flex';
+  document.querySelectorAll('.action-btn').forEach(b=>b.classList.remove('recommended'));
+}
+
+function showResult(badge,cls,net) {
+  const ov=document.getElementById('result-overlay');
+  const rb=document.getElementById('result-badge');
+  const ra=document.getElementById('result-amount');
+  rb.textContent=badge;
+  rb.className=cls;
+  if(net!=null) ra.textContent=(net>=0?'+':'')+`$${Math.abs(net).toFixed(0)}`;
+  else ra.textContent='';
+  ov.classList.add('show');
+}
+function hideResult(){document.getElementById('result-overlay').classList.remove('show');}
+
+function updateShoeBar() {
+  if(!S.shoe.length) return;
+  const pct=S.shoe.length/S.shoeTotal*100;
+  document.getElementById('shoe-bar').style.width=pct+'%';
+  document.getElementById('shoe-label').textContent=`Shoe: ${S.shoe.length}/${S.shoeTotal}`;
+}
+
+function updateFooter() {
+  el('f-balance').textContent='$'+S.balance;
+  el('f-bet').textContent='$'+(G?G.bet:S.bet);
+  el('f-round').textContent=S.round;
+  el('f-rc').textContent=S.runningCount;
+  el('f-tc').textContent=trueCount();
+  el('f-rc-wrap').style.opacity=S.cfg.showrc?1:0;
+  el('f-tc-wrap').style.opacity=S.cfg.showtc?1:0;
+}
+
+function updateStats() {
+  const total=S.stats.wins+S.stats.losses+S.stats.pushes;
+  el('s-round').textContent=S.round;
+  el('s-wins').textContent=S.stats.wins;
+  el('s-losses').textContent=S.stats.losses;
+  el('s-pushes').textContent=S.stats.pushes;
+  el('s-winrate').textContent=total>0?((S.stats.wins/total)*100).toFixed(1)+'%':'—';
+  const pnl=S.balance-S.startBalance;
+  const pnlEl=el('s-pnl');
+  pnlEl.textContent=(pnl>=0?'+':'')+`$${pnl}`;
+  pnlEl.className='stat-val '+(pnl>0?'positive':pnl<0?'negative':'');
+  el('s-accuracy').textContent=S.stats.aiTotal>0?
+    ((S.stats.aiCorrect/S.stats.aiTotal)*100).toFixed(0)+'%':'—';
+  drawPnLChart();
+}
+
+function drawPnLChart() {
+  const canvas=el('pnl-canvas');
+  const ctx=canvas.getContext('2d');
+  const w=canvas.offsetWidth||300, h=canvas.offsetHeight||80;
+  canvas.width=w; canvas.height=h;
+  ctx.clearRect(0,0,w,h);
+  const hist=S.stats.balHistory;
+  if(hist.length<2) return;
+  const min=Math.min(...hist), max=Math.max(...hist);
+  const range=max-min||1;
+  ctx.strokeStyle='#c9a84c';
+  ctx.lineWidth=1.5;
+  ctx.beginPath();
+  hist.forEach((v,i)=>{
+    const x=(i/(hist.length-1))*w;
+    const y=h-((v-min)/range)*(h-8)-4;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+}
+
+// ============================================================
+// AI AGENT
+// ============================================================
+async function askAI(decisionPoint) {
+  if (!S.apiKey||!G) return;
+  S.aiPending=true;
+
+  const hand=G.playerHands[G.activeHand]||G.playerHands[0];
+  const pv=handValue(hand);
+  const canDouble=hand.length===2&&S.balance>=G.bet&&(!G.splitCount||S.cfg.das);
+  const canSplit=hand.length===2&&G.splitCount<S.cfg.resplit&&S.balance>=G.bet&&
+    (cardRankVal(hand[0])===cardRankVal(hand[1])||(S.cfg.split10));
+  const canSurrender=S.cfg.surrender&&hand.length===2;
+
+  const availableActions=['hit','stand'];
+  if(canDouble) availableActions.push('double');
+  if(canSplit) availableActions.push('split');
+  if(canSurrender) availableActions.push('surrender');
+
+  const context = {
+    decision_point: decisionPoint,
+    player_hand: hand.map(c=>c.rank+c.suit),
+    player_total_soft: pv.soft,
+    player_total_hard: pv.hard,
+    is_soft_hand: pv.isSoft,
+    dealer_upcard: G.dealer[0].rank+G.dealer[0].suit,
+    dealer_upcard_value: Math.min(cardRankVal(G.dealer[0]),10),
+    num_decks: S.cfg.decks,
+    deck_penetration_pct: Math.round((1-S.shoe.length/S.shoeTotal)*100),
+    running_count: S.runningCount,
+    true_count: trueCount(),
+    player_balance: S.balance,
+    current_bet: G.bet,
+    available_actions: availableActions,
+    is_split_hand: G.activeHand>0,
+    split_hand_index: G.activeHand>0?G.activeHand:null,
+    round_number: S.round,
+    settings:{
+      surrender_allowed:S.cfg.surrender,
+      das_allowed:S.cfg.das,
+      blackjack_payout:S.cfg.bjpay,
+      dealer_hits_soft_17:S.cfg.h17
+    }
+  };
+
+  let schemaDesc='';
+  if(decisionPoint==='player_action'||decisionPoint==='insurance') {
+    schemaDesc=`{"action":"string","rationale":"string","confidence":0.0,"alternate":"string","alternate_note":"string"}`;
+  } else if(decisionPoint==='bet_sizing') {
+    schemaDesc=`{"recommended_bet":number,"rationale":"string","confidence":0.0,"count_influence":"string"}`;
+  } else {
+    schemaDesc=`{"outcome_summary":"string","strategic_note":"string","suggested_adjustment":null}`;
+  }
+
+  const systemPrompt=`You are an expert blackjack advisor with deep knowledge of basic strategy, Hi-Lo card counting, and bet spreading. You receive a JSON game state and must respond ONLY with valid JSON matching the specified schema — no additional text, no markdown, no explanation outside the JSON fields.
+
+Your recommendations must:
+- Follow basic strategy as the baseline
+- Deviate from basic strategy when the true count justifies it
+- Use the true count to inform bet sizing
+- Explain your reasoning in the "rationale" field using plain English
+- Express confidence as a float between 0.0 and 1.0
+
+Soft hands: always reason about the hand as soft before considering the hard total.
+Split Aces: always recommend splitting.
+Insurance: only recommend taking insurance if true count >= +3.
+
+Response schema: ${schemaDesc}`;
+
+  setAIStreaming('');
+  el('ai-action').style.display='none';
+  el('confidence-wrap').style.display='none';
+
+  try {
+    const resp = await fetch('https://api.openai.com/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+S.apiKey},
+      body:JSON.stringify({
+        model:S.model,
+        stream:true,
+        messages:[
+          {role:'system',content:systemPrompt},
+          {role:'user',content:JSON.stringify(context)}
+        ]
+      })
+    });
+
+    if(!resp.ok) {
+      const err=await resp.json();
+      throw new Error(err.error?.message||'API error '+resp.status);
+    }
+
+    S.callCount++;
+    // Rough cost estimate: gpt-4o ~$5/1M input, $15/1M output
+    S.estCost+=0.003;
+    updateCallCounter();
+    updateAPIStatus(true);
+
+    const reader=resp.body.getReader();
+    const decoder=new TextDecoder();
+    let fullText='';
+    let done=false;
+    const cursorEl=document.createElement('span');
+    cursorEl.className='cursor-blink';
+
+    while(!done) {
+      const {value,done:d}=await reader.read();
+      done=d;
+      if(value) {
+        const chunk=decoder.decode(value);
+        const lines=chunk.split('\n').filter(l=>l.startsWith('data:'));
+        for(const line of lines) {
+          const data=line.slice(5).trim();
+          if(data==='[DONE]') break;
+          try {
+            const parsed=JSON.parse(data);
+            const delta=parsed.choices?.[0]?.delta?.content||'';
+            fullText+=delta;
+            const streamEl=el('ai-streaming');
+            streamEl.textContent=fullText;
+            streamEl.appendChild(cursorEl);
+            streamEl.scrollTop=streamEl.scrollHeight;
+          } catch(e){}
+        }
+      }
+    }
+    cursorEl.remove();
+
+    // Parse JSON from response
+    try {
+      const json=JSON.parse(fullText.replace(/```json?|```/g,'').trim());
+      handleAIResponse(json, decisionPoint);
+    } catch(e) {
+      useFallback(decisionPoint);
+    }
+
+  } catch(err) {
+    updateAPIStatus(false);
+    setAIStreaming(`Error: ${err.message}\n\nFalling back to basic strategy.`);
+    useFallback(decisionPoint);
+  }
+  S.aiPending=false;
+}
+
+function handleAIResponse(json, dp) {
+  if(dp==='player_action'||dp==='insurance') {
+    const {action,rationale,confidence,alternate,alternate_note}=json;
+    setAIStreaming(rationale||'');
+    el('ai-action').style.display='flex';
+    el('ai-action-badge').textContent=action||'?';
+    el('ai-alt').textContent=alternate?`Alt: ${alternate} — ${alternate_note||''}` : '';
+
+    const conf=confidence||0.5;
+    el('confidence-wrap').style.display='flex';
+    el('conf-bar').style.width=(conf*100)+'%';
+    el('conf-bar').style.background=conf>0.7?'#2ecc71':conf>0.4?'#f0a500':'#e74c3c';
+    el('conf-pct').textContent=Math.round(conf*100)+'%';
+
+    // Highlight recommended action
+    document.querySelectorAll('.action-btn').forEach(b=>b.classList.remove('recommended'));
+    const recBtn=document.querySelector(`.action-btn[data-action="${action}"]`);
+    if(recBtn) recBtn.classList.add('recommended');
+
+    addLog('ai',`[R${S.round}] ${action?.toUpperCase()} recommended. (conf:${Math.round((conf||0)*100)}%)`);
+
+    // Validate against basic strategy for accuracy tracking
+    if(G&&!G.over) {
+      const hand=G.playerHands[G.activeHand]||G.playerHands[0];
+      const pv=handValue(hand);
+      const canDouble=hand.length===2&&S.balance>=G.bet;
+      const canSplit=hand.length===2;
+      const expected=basicStrategy(hand,pv.isSoft,canDouble,canSplit,S.cfg.surrender,S.cfg.h17);
+      S.stats.aiTotal++;
+      if(action===expected) S.stats.aiCorrect++;
+    }
+
+    if(S.mode==='autopilot'&&!S.autopilotPause&&action&&!G.over) {
+      setTimeout(()=>{
+        if(!G.over) handleAction(action);
+      }, S.cfg.apdelay*1000);
+    }
+
+  } else if(dp==='post_round') {
+    const {outcome_summary,strategic_note}=json;
+    const note=[outcome_summary,strategic_note].filter(Boolean).join(' ');
+    if(note) addLog('info',`[R${S.round} — Note] ${note}`);
+    setAIStreaming(note||'Round complete.');
+  }
+}
+
+function useFallback(dp) {
+  addLog('info',`[R${S.round}] AI fallback — basic strategy used.`);
+  if((dp==='player_action')&&G&&!G.over) {
+    const hand=G.playerHands[G.activeHand]||G.playerHands[0];
+    const pv=handValue(hand);
+    const canDouble=hand.length===2&&S.balance>=G.bet;
+    const canSplit=hand.length===2;
+    const action=basicStrategy(hand,pv.isSoft,canDouble,canSplit,S.cfg.surrender,S.cfg.h17);
+    setAIStreaming(`Basic strategy: ${action}`);
+    el('ai-action').style.display='flex';
+    el('ai-action-badge').textContent=action;
+    const recBtn=document.querySelector(`.action-btn[data-action="${action}"]`);
+    if(recBtn) recBtn.classList.add('recommended');
+    if(S.mode==='autopilot'&&!S.autopilotPause) {
+      setTimeout(()=>{if(!G.over)handleAction(action);}, S.cfg.apdelay*1000);
+    }
+  }
+}
+
+function setAIStreaming(text) {
+  el('ai-streaming').textContent=text;
+}
+
+// ============================================================
+// LOG
+// ============================================================
+function addLog(type, text) {
+  S.sessionLog.push({type,text,time:Date.now()});
+  const logEl=el('agent-log');
+  const entry=document.createElement('div');
+  entry.className=`log-entry ${type}`;
+  entry.textContent=text;
+  logEl.appendChild(entry);
+  // auto-scroll
+  const wrap=el('agent-log-wrap');
+  wrap.scrollTop=wrap.scrollHeight;
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+function openSettings() {
+  loadSettingsUI();
+  el('settings-modal').style.display='flex';
+}
+function closeSettings(){el('settings-modal').style.display='none';}
+
+function loadSettingsUI() {
+  el('cfg-apikey').value=S.apiKey||'';
+  el('cfg-model').value=S.model;
+  el('cfg-decks').value=S.cfg.decks;
+  el('cfg-h17').checked=S.cfg.h17;
+  el('cfg-bjpay').value=S.cfg.bjpay;
+  el('cfg-surrender').checked=S.cfg.surrender;
+  el('cfg-insurance').checked=S.cfg.insurance;
+  el('cfg-das').checked=S.cfg.das;
+  el('cfg-resplit').value=S.cfg.resplit;
+  el('cfg-10split').checked=S.cfg.split10;
+  el('cfg-balance').value=S.startBalance;
+  el('cfg-minbet').value=S.cfg.minbet;
+  el('cfg-maxbet').value=S.cfg.maxbet;
+  el('cfg-maxrounds').value=S.cfg.maxrounds;
+  el('cfg-losslimit').value=S.cfg.losslimit;
+  el('cfg-showrc').checked=S.cfg.showrc;
+  el('cfg-showtc').checked=S.cfg.showtc;
+  el('cfg-sound').checked=S.soundOn;
+  el('cfg-apdelay').value=S.cfg.apdelay;
+  el('cfg-apdelay-val').textContent=S.cfg.apdelay+'s';
+  el('cfg-calls').textContent=`${S.callCount} · ~$${S.estCost.toFixed(3)}`;
+}
+
+function saveSettings() {
+  const key=el('cfg-apikey').value.trim();
+  if(key) { S.apiKey=key; localStorage.setItem('bj_apikey',key); }
+  S.model=el('cfg-model').value;
+  S.cfg.decks=parseInt(el('cfg-decks').value);
+  S.cfg.h17=el('cfg-h17').checked;
+  S.cfg.bjpay=el('cfg-bjpay').value;
+  S.cfg.surrender=el('cfg-surrender').checked;
+  S.cfg.insurance=el('cfg-insurance').checked;
+  S.cfg.das=el('cfg-das').checked;
+  S.cfg.resplit=parseInt(el('cfg-resplit').value)||3;
+  S.cfg.split10=el('cfg-10split').checked;
+  const newBal=parseInt(el('cfg-balance').value)||1000;
+  S.cfg.minbet=parseInt(el('cfg-minbet').value)||10;
+  S.cfg.maxbet=parseInt(el('cfg-maxbet').value)||500;
+  S.cfg.maxrounds=parseInt(el('cfg-maxrounds').value)||0;
+  S.cfg.losslimit=parseInt(el('cfg-losslimit').value)||0;
+  S.cfg.showrc=el('cfg-showrc').checked;
+  S.cfg.showtc=el('cfg-showtc').checked;
+  S.soundOn=el('cfg-sound').checked;
+  S.cfg.apdelay=parseFloat(el('cfg-apdelay').value)||1.5;
+
+  el('bet-input').min=S.cfg.minbet;
+  el('bet-input').max=S.cfg.maxbet;
+  el('bet-slider').min=S.cfg.minbet;
+  el('bet-slider').max=S.cfg.maxbet;
+
+  localStorage.setItem('bj_settings',JSON.stringify(S.cfg));
+  localStorage.setItem('bj_model',S.model);
+  updateAPIStatus(!!S.apiKey);
+  updateFooter();
+  closeSettings();
+}
+
+function loadSavedSettings() {
+  const key=localStorage.getItem('bj_apikey');
+  if(key) S.apiKey=key;
+  const model=localStorage.getItem('bj_model');
+  if(model) S.model=model;
+  const cfg=localStorage.getItem('bj_settings');
+  if(cfg) try{Object.assign(S.cfg,JSON.parse(cfg));}catch(e){}
+  updateAPIStatus(!!S.apiKey);
+}
+
+function parseEnvFile(text, statusElId) {
+  const match=text.match(/OPENAI_API_KEY\s*=\s*["']?([^\s"']+)["']?/);
+  if(match) {
+    S.apiKey=match[1];
+    localStorage.setItem('bj_apikey',S.apiKey);
+    if(el('cfg-apikey')) el('cfg-apikey').value=S.apiKey;
+    el(statusElId).textContent='✓ Key loaded from .env';
+    el(statusElId).className='inline-ok';
+    updateAPIStatus(true);
+  } else {
+    el(statusElId).textContent='OPENAI_API_KEY not found in file.';
+    el(statusElId).className='inline-err';
+  }
+}
+
+// ============================================================
+// WIZARD
+// ============================================================
+let wizardStep=0;
+
+function openWizard() {
+  wizardStep=0;
+  renderWizardStep();
+  el('wizard-modal').style.display='flex';
+}
+
+function renderWizardStep() {
+  const body=el('wizard-body');
+  const title=el('wizard-title');
+  if(wizardStep===0) {
+    title.textContent='Welcome to Agent Blackjack';
+    body.innerHTML=`
+      <p class="wizard-desc">An AI-powered blackjack advisor using OpenAI. Watch the AI reason through each hand in real time, or let it play automatically in Autopilot mode.</p>
+      <p class="wizard-desc" style="margin-top:8px">To get started, you'll need an OpenAI API key. Each round uses 2–4 API calls. A 50-round session costs roughly $0.10–$0.30.</p>
+      <div class="wizard-nav"><button class="btn-primary" onclick="wizardStep=1;renderWizardStep()">Get Started →</button></div>`;
+  } else if(wizardStep===1) {
+    title.textContent='Configure API Key';
+    body.innerHTML=`
+      <div class="field-group">
+        <label>Paste your OpenAI API key</label>
+        <input type="password" class="field-input" id="wiz-apikey" placeholder="sk-..." value="${S.apiKey||''}">
+      </div>
+      <label class="env-upload-btn" for="wiz-env-upload">📂 Upload .env file instead</label>
+      <input type="file" id="wiz-env-upload" style="display:none" accept=".env,text/plain">
+      <div id="wiz-env-status" style="font-size:.72rem;color:var(--text-dim);margin-top:6px"></div>
+      <div class="wizard-nav">
+        <button class="btn-secondary" onclick="wizardStep=0;renderWizardStep()">← Back</button>
+        <button class="btn-primary" onclick="wizardSaveKey()" style="flex:1">Validate & Continue →</button>
+      </div>`;
+    setTimeout(()=>{
+      const envUpload=el('wiz-env-upload');
+      if(envUpload) envUpload.addEventListener('change',e=>{
+        const f=e.target.files[0];
+        if(!f) return;
+        const r=new FileReader();
+        r.onload=ev=>parseEnvFile(ev.target.result,'wiz-env-status');
+        r.readAsText(f);
+      });
+    },50);
+  } else if(wizardStep===2) {
+    title.textContent='Quick Setup';
+    body.innerHTML=`
+      <div class="field-group"><label>Starting Balance ($)</label><input type="number" class="field-input" id="wiz-balance" value="${S.startBalance}" min="100" step="100"></div>
+      <div class="field-group">
+        <label>Number of Decks</label>
+        <select class="field-select" id="wiz-decks">
+          <option value="1">1</option><option value="2">2</option><option value="4">4</option>
+          <option value="6" ${S.cfg.decks===6?'selected':''}>6 (recommended)</option><option value="8">8</option>
+        </select>
+      </div>
+      <div class="wizard-nav">
+        <button class="btn-secondary" onclick="wizardStep=1;renderWizardStep()">← Back</button>
+        <button class="btn-primary" onclick="wizardFinish()" style="flex:1">Start Playing →</button>
+      </div>`;
+  }
+}
+
+async function wizardSaveKey() {
+  const key=(el('wiz-apikey')||{}).value?.trim()||S.apiKey;
+  if(!key||!key.startsWith('sk-')) {
+    const st=el('wiz-env-status');
+    if(st){st.textContent='Please enter a valid API key (starts with sk-).';st.className='inline-err';}
+    return;
+  }
+  // Simple validation test
+  try {
+    const st=el('wiz-env-status');
+    if(st){st.textContent='Validating...';st.className='';}
+    const resp=await fetch('https://api.openai.com/v1/models',{headers:{'Authorization':'Bearer '+key}});
+    if(!resp.ok) throw new Error('Invalid key');
+    S.apiKey=key;
+    localStorage.setItem('bj_apikey',key);
+    updateAPIStatus(true);
+    wizardStep=2;
+    renderWizardStep();
+  } catch(e) {
+    const st=el('wiz-env-status');
+    if(st){st.textContent='Key validation failed: '+e.message;st.className='inline-err';}
+  }
+}
+
+function wizardFinish() {
+  const bal=parseInt((el('wiz-balance')||{}).value)||1000;
+  const decks=parseInt((el('wiz-decks')||{}).value)||6;
+  S.startBalance=bal; S.balance=bal;
+  S.cfg.decks=decks;
+  S.shoe=buildShoe(S.cfg.decks);
+  S.shoeTotal=S.shoe.length;
+  el('wizard-modal').style.display='none';
+  el('f-balance').textContent='$'+S.balance;
+  updateShoeBar();
+  updateStats();
+  localStorage.setItem('bj_settings',JSON.stringify(S.cfg));
+}
+
+// ============================================================
+// MODE TOGGLE
+// ============================================================
+function setMode(mode) {
+  S.mode=mode;
+  S.autopilotPause=false;
+  el('mode-advisor').classList.toggle('active',mode==='advisor');
+  el('mode-autopilot').classList.toggle('active',mode==='autopilot');
+  el('autopilot-indicator').classList.toggle('show',mode==='autopilot');
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function el(id){return document.getElementById(id);}
+
+function updateAPIStatus(ok) {
+  const dot=el('api-dot');
+  dot.className=ok?'connected':'';
+  dot.title=ok?'API connected':'API not configured';
+}
+
+function updateCallCounter() {
+  const txt=`${S.callCount} call${S.callCount!==1?'s':''} · ~$${S.estCost.toFixed(3)}`;
+  el('call-counter').textContent=txt;
+}
+
+function playSound(type) {
+  if(!S.soundOn) return;
+  const ctx=new(window.AudioContext||window.webkitAudioContext)();
+  const o=ctx.createOscillator();
+  const g=ctx.createGain();
+  o.connect(g); g.connect(ctx.destination);
+  if(type==='win'){o.frequency.value=880;g.gain.setValueAtTime(.2,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.4);}
+  else if(type==='loss'){o.frequency.value=220;g.gain.setValueAtTime(.15,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.5);}
+  else if(type==='blackjack'){o.frequency.value=1046;g.gain.setValueAtTime(.3,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.8);}
+  o.start(); o.stop(ctx.currentTime+1);
+}
+
+// ============================================================
+// EVENTS
+// ============================================================
+document.getElementById('deal-btn').addEventListener('click',()=>startRound());
+document.getElementById('settings-btn').addEventListener('click',openSettings);
+document.getElementById('settings-close').addEventListener('click',closeSettings);
+document.getElementById('settings-save').addEventListener('click',saveSettings);
+document.getElementById('copy-log-btn').addEventListener('click',()=>{
+  const text=S.sessionLog.map(e=>e.text).join('\n');
+  navigator.clipboard.writeText(text).then(()=>alert('Log copied!'));
+});
+
+document.getElementById('cfg-resetbalance').addEventListener('click',()=>{
+  const bal=parseInt(el('cfg-balance').value)||1000;
+  S.startBalance=bal; S.balance=bal;
+  updateFooter(); updateStats();
+});
+
+document.getElementById('sound-btn').addEventListener('click',()=>{
+  S.soundOn=!S.soundOn;
+  el('sound-btn').textContent=S.soundOn?'🔊':'🔇';
+});
+
+document.getElementById('mode-advisor').addEventListener('click',()=>setMode('advisor'));
+document.getElementById('mode-autopilot').addEventListener('click',()=>{
+  setMode('autopilot');
+  if(!S.apiKey){openWizard();setMode('advisor');return;}
+  if(!G||G.over){
+    setTimeout(()=>autoRound(),S.cfg.apdelay*1000);
+  }
+});
+
+document.getElementById('cfg-apdelay').addEventListener('input',function(){
+  el('cfg-apdelay-val').textContent=this.value+'s';
+});
+
+// Action buttons
+document.querySelectorAll('.action-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>handleAction(btn.dataset.action));
+});
+
+// Bet sync
+el('bet-input').addEventListener('input',function(){
+  el('bet-slider').value=this.value;
+  S.bet=parseInt(this.value)||25;
+  el('f-bet').textContent='$'+S.bet;
+});
+el('bet-slider').addEventListener('input',function(){
+  el('bet-input').value=this.value;
+  S.bet=parseInt(this.value)||25;
+  el('f-bet').textContent='$'+S.bet;
+});
+
+// Panel tabs
+document.querySelectorAll('.panel-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    const t=tab.dataset.tab;
+    document.querySelectorAll('.panel-tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(x=>x.classList.remove('active'));
+    tab.classList.add('active');
+    el(t+'-tab').classList.add('active');
+    if(t==='stats') drawPnLChart();
+    // Mobile panel toggle
+    if(window.innerWidth<=768) el('agent-panel').classList.add('open');
+  });
+});
+
+// Settings .env upload
+el('env-upload-settings').addEventListener('change',function(e){
+  const f=e.target.files[0];
+  if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>parseEnvFile(ev.target.result,'env-status-settings');
+  r.readAsText(f);
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown',e=>{
+  if(el('settings-modal').style.display!=='none'||el('wizard-modal').style.display!=='none') return;
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT') return;
+  const map={h:'hit',s:'stand',d:'double',p:'split',u:'surrender',' ':null};
+  const k=e.key.toLowerCase();
+  if(k===' ') { e.preventDefault(); if(!G||G.over) startRound(); return; }
+  if(k==='escape') { S.autopilotPause=true; addLog('info','Autopilot paused.'); return; }
+  if(map[k]&&G&&!G.over) { e.preventDefault(); handleAction(map[k]); }
+});
+
+// Mobile panel toggle on header
+el('panel-tabs').addEventListener('click',()=>{
+  if(window.innerWidth<=768) el('agent-panel').classList.toggle('open');
+});
+
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+  loadSavedSettings();
+  S.shoe=buildShoe(S.cfg.decks);
+  S.shoeTotal=S.shoe.length;
+  updateShoeBar();
+  updateFooter();
+  updateStats();
+  updateCallCounter();
+
+  // Clear table
+  el('dealer-cards').innerHTML='';
+  const pc=document.getElementById('player-cards');
+  if(pc) pc.innerHTML='';
+  el('action-buttons').style.display='none';
+
+  if(!S.apiKey) {
+    setTimeout(openWizard,300);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
